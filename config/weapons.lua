@@ -1,12 +1,12 @@
 SHARED_DATA = SHARED_DATA or {}
 
-local scopes = {
+local scopes <const> = {
     COMPONENT_RIFLE_SCOPE02 = true,
     COMPONENT_RIFLE_SCOPE03 = true,
     COMPONENT_RIFLE_SCOPE04 = true,
 }
 
-SHARED_DATA.WEAPONS = {
+SHARED_DATA.WEAPONS  = {
     WEAPON_LASSO = {
         Name           = "Lasso",
         Desc           = "Used Up When You Hogtie Someone, The Reinforced one has unlimited hogtie usage",

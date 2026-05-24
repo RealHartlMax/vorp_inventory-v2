@@ -3,7 +3,7 @@ CONFIG                                   = CONFIG or {}
 
 CONFIG.LANGUAGE                          = "English"
 
-CONFIG.DEV_MODE                          = true    -- If your server is live set this to false
+CONFIG.DEV_MODE                          = false   -- If your server is live set this to false
 
 CONFIG.PUSH_TO_TALK                      = true    -- enable PTT while inventory is open
 
@@ -23,22 +23,22 @@ CONFIG.RELOAD_WAIT                       = 2000 -- after reload must wait this m
 CONFIG.USE_RELOAD_SPEEDS                 = true -- If true, the reload speeds will be added to the weapons and you can change them in SHARED_DATA.WEAPONS
 
 -- IF YOU DISABLE THIS A LOT OF FEATURES WILL BE DISABLED. LEAVE IT TO TRUE
-CONFIG.MANUAL_WEAPON_RELOAD              = true -- If true, the player will have to manually reload their weapons, and other features will be added too like unload ammo from weapons etc.
+CONFIG.MANUAL_WEAPON_RELOAD              = true  -- If true, the player will have to manually reload their weapons, and other features will be added too like unload ammo from weapons etc.
 
-CONFIG.USE_LANTERN_ON_BELT               = true -- If true then lanterns will be put on belt
+CONFIG.USE_LANTERN_ON_BELT               = true  -- If true then lanterns will be put on belt
 
-CONFIG.DUAL_WIELD                        = true -- If true dual wielding will be allowed.
+CONFIG.DUAL_WIELD                        = true  -- If true dual wielding will be allowed.
 
-CONFIG.AUTO_EQUIP_USED_WEAPONS           = true -- will add weapons to the weapon wheel if player left with them equipped when they rejoin only works if MANUAL_WEAPON_RELOAD is true
+CONFIG.AUTO_EQUIP_USED_WEAPONS           = true  -- will add weapons to the weapon wheel if player left with them equipped when they rejoin only works if MANUAL_WEAPON_RELOAD is true
 
-CONFIG.REMOVE_THROWABLE_WEAPONS          = true -- If true, the throwable weapons will be removed when fired, and if picked up they get theweapon back again
+CONFIG.REMOVE_THROWABLE_WEAPONS          = true  -- If true, the throwable weapons will be removed when fired, and if picked up they get theweapon back again
 
-CONFIG.ENABLE_PETROL_CAN                 = true -- If true, the petrol can will be enabled and will be usable the amo is also saved
+CONFIG.ENABLE_PETROL_CAN                 = false -- If true, the petrol can will be enabled and will be usable the amo is also saved
 
 -- HERE WE DECIDE IF PLAYERS CAN EQUIP MORE THAN ONE WEAPON TYPE FOR EXAMPLE CAN EQUIPP 2 LONG WEAPONS? OR 2 SHORT WEAPONS?
 --  IF YOU WANT TO DISABLE THIS JUST REMOVE IT FROM THE WEAPONS.LUA FILE the variables LongWeapon and ShortWeapon
 CONFIG.EQUIP_WEAPONS                     = {
-	LONG_WEAPONS = 1, -- HOW MANY THEY CAN EQUIP AT THE SAME TIME IF ONE THEY CAN ONLY EQUIP ONE LONG WEAPON
+	LONG_WEAPONS = 2, -- HOW MANY THEY CAN EQUIP AT THE SAME TIME IF ONE THEY CAN ONLY EQUIP ONE LONG WEAPON
 	SHORT_WEAPONS = 2, -- HOW MANY THEY CAN EQUIP AT THE SAME TIME IF ONE THEY CAN ONLY EQUIP ONE SHORT WEAPON
 }
 -------------------------
@@ -47,7 +47,7 @@ CONFIG.USE_WEAPON_DEGRADATION            = true                   -- If true, th
 
 CONFIG.DISABLE_WEAPON_FIRE_WHEN_DEGRADED = true                   -- If true, the weapon will be disabled when degraded and damaged
 
-CONFIG.RESTORE_WEAPON_DEGRADATION        = true                   -- if true degradation will be restored when cleaning it, if false it means weapon dont last forever.
+CONFIG.RESTORE_WEAPON_DEGRADATION        = false                  -- if true degradation will be restored when cleaning it, if false it means weapon dont last forever.
 
 CONFIG.CLEAN_WEAPON_ITEM                 = "gun_oil"              -- item to clean the weapon. this is not usable item
 
