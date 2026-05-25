@@ -1532,7 +1532,7 @@ local InventoryService <const> = {
 
 			userAmmoData.ammo[ammotype] = math.min(userAmmoData.ammo[ammotype] + amount, SHARED_DATA.MAX_AMMO_BELT[ammotype])
 			-- updates database each time we unload ammo from a weapon
-			weapon:setAmmo(ammotype, amount)
+			weapon:setAmmo(ammotype, 0)
 
 			local query <const> = "UPDATE characters Set ammo=@ammo WHERE charidentifier=@charidentifier"
 			local params <const> = { charidentifier = userAmmoData.charidentifier, ammo = json.encode(userAmmoData.ammo) }
