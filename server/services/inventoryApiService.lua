@@ -1208,7 +1208,7 @@ local InventoryAPI = {
 
 						-- is comps an array ?
 						if type(comps) == "table" then
-							for key, value in pairs(comps) do
+							for key, _ in pairs(comps) do
 								if type(key) ~= "string" then
 									return false
 								else

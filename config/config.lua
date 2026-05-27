@@ -49,7 +49,7 @@ CONFIG.USE_WEAPON_COMPONENTS             = false                  -- if true inv
 
 CONFIG.USE_WEAPON_DEGRADATION            = true                   -- If true, the weapon degradation will be used meaning you can inspect and clean it, and weapon stats will be saved across restarts
 
-CONFIG.DISABLE_WEAPON_FIRE_WHEN_DEGRADED = true                   -- If true, the weapon will be disabled when degraded and damaged
+CONFIG.DISABLE_WEAPON_FIRE_WHEN_DEGRADED = false                  -- If true, the weapon will be disabled when degraded and damaged
 
 CONFIG.RESTORE_WEAPON_DEGRADATION        = false                  -- if true degradation will be restored when cleaning it, if false it means weapon dont last forever.
 
