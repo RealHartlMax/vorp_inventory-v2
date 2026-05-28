@@ -84,6 +84,8 @@ CONFIG.INVENTORY_UI = {
 
 	ADD_GOLD_ITEM = false,             -- If true, the gold item will be added to the inventory to represent the gold/give gold/drop gold
 
+	ADD_PESOS_ITEM = false,            -- If true, the pesos item will be added to the inventory to represent pesos/give/drop pesos
+
 	ADD_ROLL_ITEM = false,             -- If true, the roll item will be added to the inventory to represent the roll/give roll/drop roll
 
 	HAND_CRAFT_BUTTON = true,          -- enables hand crafting button in inventory
@@ -137,6 +139,11 @@ CONFIG.SFX          = {
 		NAME = "show_info",
 		REF = "Study_Sounds",
 	},
+	PESOS_DROP = {
+		ENABLE = true,
+		NAME = "show_info",
+		REF = "Study_Sounds",
+	},
 	GOLD_DROP = {
 		ENABLE = true,
 		NAME = "show_info",
@@ -163,6 +170,7 @@ CONFIG.PICKUPS      = {
 	DROP_MODELS = {
 		default_box = "p_cottonbox01x", -- default when object is not found will always spawn this object for weapon or items
 		money_bag = "p_moneybag02x", -- prop for the money pickup
+		pesos_bag = "p_moneybag02x", -- prop for the pesos pickup
 		gold_bag = "s_pickup_goldbar01x", -- prop for the gold pickup
 		rol_bag = "s_pickup_goldbar01x", -- prop for roll/currency pickups (reuse or override)
 		-- add more here
@@ -192,6 +200,17 @@ CONFIG.PICKUPS      = {
 				ClearTaskTime = 1200
 			},
 			Money = {
+
+				ENABLE = true,
+				AnimDict = "mech_pickup@money@coins@table",
+				AnimName = "2h_long_enter",
+				Speed = 1.0,
+				SpeedMultiplier = 8.0,
+				Duration = -1,
+				Flag = 1,
+				ClearTaskTime = 500
+			},
+			Pesos = {
 
 				ENABLE = true,
 				AnimDict = "mech_pickup@money@coins@table",

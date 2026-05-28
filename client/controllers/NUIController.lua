@@ -1,6 +1,7 @@
 --=========================== NUI CALL BACKS  ===========================--
 RegisterNUICallback('NUIFocusOff', NUI_SERVICE.FOCUS.OFF)
 RegisterNUICallback('DropItemMoney', NUI_SERVICE.CURRENCY.DROP_MONEY)
+RegisterNUICallback('DropItemPesos', NUI_SERVICE.CURRENCY.DROP_PESOS)
 RegisterNUICallback('DropItemGold', NUI_SERVICE.CURRENCY.DROP_GOLD)
 RegisterNUICallback('DropItemRoll', NUI_SERVICE.CURRENCY.DROP_ROLL)
 RegisterNUICallback('DropItemStandard', NUI_SERVICE.ITEM.DROP)

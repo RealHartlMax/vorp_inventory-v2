@@ -13,10 +13,11 @@ local THROWN_WEAPONS <const>       = {}
 local NEW_PLAYER <const>           = {}
 
 --- CONTAINS PICKUPS DATA
----@type table<string, {ITEMS: table<string>, MONEY: table<string>, GOLD: table<string>, ROLL: table<string>}>
+---@type table<string, {ITEMS: table<string>, MONEY: table<string>, PESOS: table<string>, GOLD: table<string>, ROLL: table<string>}>
 local PICKUPS <const>              = {
 	ITEMS = {},
 	MONEY = {},
+	PESOS = {},
 	GOLD = {},
 	ROLL = {},
 }
@@ -39,6 +40,51 @@ local function getSourceInfo(source)
 	local sourceIdentifier <const> = character.charIdentifier
 	local steamname <const> = GetPlayerName(source) or ""
 	return charname, sourceIdentifier, steamname
+end
+
+local function removePesos(character, amount)
+	if not character or amount <= 0 then return false end
+
+	local current = tonumber(character.pesos) or 0
+	if current < amount then return false end
+
+	if character.removeCurrency then
+		character.removeCurrency(3, amount)
+		return true
+	end
+
+	if character.setPesos then
+		character.setPesos(current - amount)
+		return true
+	end
+
+	character.pesos = current - amount
+	if character.updateCharUi then
+		character.updateCharUi()
+	end
+	return true
+end
+
+local function addPesos(character, amount)
+	if not character or amount <= 0 then return false end
+
+	local current = tonumber(character.pesos) or 0
+
+	if character.addCurrency then
+		character.addCurrency(3, amount)
+		return true
+	end
+
+	if character.setPesos then
+		character.setPesos(current + amount)
+		return true
+	end
+
+	character.pesos = current + amount
+	if character.updateCharUi then
+		character.updateCharUi()
+	end
+	return true
 end
 
 -- to update custom inv cache
@@ -318,6 +364,62 @@ local InventoryService <const> = {
 			local title <const> = LANG.givemoney
 			local description <const> = "**" .. LANG.WebHookLang.amount .. "**: `" .. amount .. "`\n **" .. LANG.WebHookLang.charname .. ":** `" .. charname .. "` \n**" .. LANG.WebHookLang.Steamname .. "** `" .. steamname .. "` \n**" .. LANG.to .. "** `" .. charname2 .. "`\n**" .. LANG.WebHookLang.Steamname .. "** `" .. steamname2 .. "` \n"
 			local info <const> = { source = _source, name = CONFIG.LOGS.webhookname, title = title, description = description, webhook = CONFIG.LOGS.webhook, color = CONFIG.LOGS.colorgiveMoney, }
+			SV_UTILS.DISCORD_LOG(info)
+
+			TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
+			SV_UTILS.PROCESS.REMOVE_USER(_source)
+		end,
+
+		PESOS = function(target, amount)
+			local _source <const> = source
+			if target == _source then
+				return CORE.NotifyRightTip(_source, LANG.cantgiveyourself, 5000)
+			end
+
+			local sourceCharacter <const> = getCharacter(_source)
+			local targetCharacter <const> = getCharacter(target)
+			if not targetCharacter or not sourceCharacter then
+				return TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
+			end
+
+			local sourcePesos <const> = tonumber(sourceCharacter.pesos) or 0
+			local charid <const> = sourceCharacter.charIdentifier
+			if not INVENTORY_SERVICE.IS_NEW_PLAYER(_source, charid) then
+				return TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
+			end
+
+			if sourcePesos < amount then
+				CORE.NotifyRightTip(_source, LANG.NotEnoughPesos or LANG.NotEnoughMoney, 3000)
+				return TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
+			end
+
+			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then return end
+			SV_UTILS.PROCESS.ADD_USER(_source)
+
+			if BEING_ASKED[target] then
+				return CORE.NotifyRightTip(_source, LANG.playerAlreadyBeingAsked, 5000)
+			end
+
+			if not INVENTORY_SERVICE.GIVE.ASK_TO_GIVE_ITEMS(_source, target, { type = "item_pesos", amount = amount }) then
+				return
+			end
+
+			if not removePesos(sourceCharacter, amount) then
+				CORE.NotifyRightTip(_source, LANG.NotEnoughPesos or LANG.NotEnoughMoney, 3000)
+				TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
+				SV_UTILS.PROCESS.REMOVE_USER(_source)
+				return
+			end
+			addPesos(targetCharacter, amount)
+			CORE.NotifyRightTip(_source, (LANG.YouPaidPesos or LANG.YouPaid) .. amount .. " ID: " .. target, 3000)
+			CORE.NotifyRightTip(target, (LANG.YouReceivedPesos or LANG.YouReceived) .. amount .. " ID: " .. _source, 3000)
+
+			local charname <const>, _, steamname <const> = getSourceInfo(_source)
+			local charname2 <const>, _, steamname2 <const> = getSourceInfo(target)
+			local title <const> = LANG.givepesos or LANG.givemoney
+			local currencyLabel <const> = (LANG.WebHookLang and LANG.WebHookLang.pesos) or "Pesos"
+			local description <const> = "**" .. currencyLabel .. "**: `" .. amount .. "`\n **" .. LANG.WebHookLang.charname .. ":** `" .. charname .. "` \n**" .. LANG.WebHookLang.Steamname .. "** `" .. steamname .. "` \n**" .. LANG.to .. "** `" .. charname2 .. "`\n**" .. LANG.WebHookLang.Steamname .. "** `" .. steamname2 .. "` \n"
+			local info <const> = { source = _source, name = CONFIG.LOGS.webhookname, title = title, description = description, webhook = CONFIG.LOGS.webhook, color = CONFIG.LOGS.colorgivePesos or CONFIG.LOGS.colorgiveMoney, }
 			SV_UTILS.DISCORD_LOG(info)
 
 			TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
@@ -896,6 +998,43 @@ local InventoryService <const> = {
 			SV_UTILS.PROCESS.REMOVE_USER(_source)
 		end,
 
+		PESOS = function(data)
+			local _source = source
+
+			local pesos <const> = PICKUPS.PESOS[data.uuid]
+			if not pesos then
+				return
+			end
+
+			local character <const> = getCharacter(_source)
+			if not character then return end
+
+			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then
+				return
+			end
+			SV_UTILS.PROCESS.ADD_USER(_source)
+
+			local charname          = character.firstname .. ' ' .. character.lastname
+			local steamname <const> = GetPlayerName(_source) or ""
+			local pesosLabel <const> = (LANG.WebHookLang and LANG.WebHookLang.pesos) or "Pesos"
+			local description       = "**" .. pesosLabel .. ":** `" .. pesos.amount .. "` \n**" .. LANG.WebHookLang.charname .. ":** `" .. charname .. "`\n**" .. LANG.WebHookLang.Steamname .. "** `" .. steamname .. "`\n"
+			SV_UTILS.DISCORD_LOG({
+				source = _source,
+				name = CONFIG.LOGS.webhookname,
+				title = (LANG.WebHookLang and LANG.WebHookLang.pickedpesos) or "Picked up pesos",
+				description = description,
+				webhook = CONFIG.LOGS.webhook,
+				color = CONFIG.LOGS.colormoneypickup
+			})
+
+			TriggerClientEvent("vorpInventory:sharePesosPickupClient", -1, data.obj, nil, nil, nil, 2)
+			TriggerClientEvent("vorpInventory:playerAnim", _source, data.obj)
+
+			addPesos(character, pesos.amount)
+			PICKUPS.PESOS[data.uuid] = nil
+			SV_UTILS.PROCESS.REMOVE_USER(_source)
+		end,
+
 		GOLD = function(data)
 			local _source = source
 			local picup <const> = PICKUPS.GOLD[data.uuid]
@@ -1097,6 +1236,44 @@ local InventoryService <const> = {
 				if PICKUPS.MONEY[uid] then
 					TriggerClientEvent("vorpInventory:shareMoneyPickupClient", -1, PICKUPS.MONEY[uid].obj, nil, nil, nil, 2)
 					PICKUPS.MONEY[uid] = nil
+				end
+			end)
+
+			return callback(true)
+		end,
+
+		SHARE_PESOS = function(source, callback, data)
+			local character <const> = getCharacter(source)
+			if not character then return callback(false) end
+
+			local current <const> = tonumber(character.pesos) or 0
+			if data.amount > current then
+				return callback(false)
+			end
+
+			if not removePesos(character, data.amount) then
+				return callback(false)
+			end
+
+			local uid <const> = SV_UTILS.GENERATE_UNIQUE_ID()
+			TriggerClientEvent("vorpInventory:sharePesosPickupClient", -1, data.handle, data.amount, data.position, uid, 1, data.rotation)
+
+			PICKUPS.PESOS[uid] = {
+				name = LANG.inventorypesoslabel or "Pesos",
+				obj = data.handle,
+				amount = data.amount,
+				coords = data.position,
+				uuid = uid
+			}
+
+			if not CONFIG.PICKUPS.USE_TIMER then
+				return callback(true)
+			end
+
+			SetTimeout(CONFIG.PICKUPS.TIMER * 60000, function()
+				if PICKUPS.PESOS[uid] then
+					TriggerClientEvent("vorpInventory:sharePesosPickupClient", -1, PICKUPS.PESOS[uid].obj, nil, nil, nil, 2)
+					PICKUPS.PESOS[uid] = nil
 				end
 			end)
 
@@ -1968,6 +2145,17 @@ local InventoryService <const> = {
 		local value <const> = CONFIG.PLAYER_RESPAWN
 		if value.MONEY.ENABLE then
 			removeCurrency(0, character.money, value.MONEY.PERCENTAGE, value.MONEY.JOB_LOCK)
+		end
+
+		if value.PESOS and value.PESOS.ENABLE then
+			local currentPesos <const> = tonumber(character.pesos) or 0
+			if not SHARED_UTILS.IS_VALUE_IN_ARRAY(job, value.PESOS.JOB_LOCK) then
+				if value.PESOS.PERCENTAGE == 1.0 then
+					removePesos(character, currentPesos)
+				else
+					removePesos(character, currentPesos * value.PESOS.PERCENTAGE)
+				end
+			end
 		end
 
 		if value.GOLD.ENABLE then

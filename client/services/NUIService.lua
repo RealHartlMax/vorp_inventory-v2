@@ -588,6 +588,7 @@ local nuiService = {
 					action = "updateStatusHud",
 					show   = not IsRadarHidden(),
 					money  = result.money,
+					pesos  = result.pesos,
 					gold   = result.gold,
 					rol    = result.rol,
 					id     = GetPlayerServerId(PlayerId()),
@@ -744,6 +745,10 @@ local nuiService = {
 					if IS_PROCESSING_PAYMENT then return end
 					IS_PROCESSING_PAYMENT = true
 					TriggerServerEvent("vorpinventory:giveMoneyToPlayer", target, tonumber(data2.count))
+				elseif data2.type == "item_pesos" then
+					if IS_PROCESSING_PAYMENT then return end
+					IS_PROCESSING_PAYMENT = true
+					TriggerServerEvent("vorpinventory:givePesosToPlayer", target, tonumber(data2.count))
 				elseif CONFIG.INVENTORY_UI.ADD_GOLD_ITEM and data2.type == "item_gold" then
 					if IS_PROCESSING_PAYMENT then return end
 					IS_PROCESSING_PAYMENT = true
@@ -873,13 +878,13 @@ local nuiService = {
 
 				data.advanced = objectPositionData
 				NUI_SERVICE.WEAPON.DROP(data, true)
-			elseif itemType == "item_money" or itemType == "item_gold" or itemType == "item_rol" then
+			elseif itemType == "item_money" or itemType == "item_pesos" or itemType == "item_gold" or itemType == "item_rol" then
 				local quantity <const> = tonumber(data.number)
 				if not quantity or quantity <= 0 then
 					return
 				end
 
-				local modelKey <const> = itemType == "item_money" and "money_bag" or itemType == "item_gold" and "gold_bag" or "rol_bag"
+				local modelKey <const> = itemType == "item_money" and "money_bag" or itemType == "item_pesos" and "pesos_bag" or itemType == "item_gold" and "gold_bag" or "rol_bag"
 				local model <const> = CONFIG.PICKUPS.DROP_MODELS[modelKey] or CONFIG.PICKUPS.DROP_MODELS.default_box
 
 				if not UTILS.LOAD_MODEL(model) then
@@ -905,6 +910,8 @@ local nuiService = {
 				data.advanced = objectPositionData
 				if itemType == "item_money" then
 					NUI_SERVICE.CURRENCY.DROP_MONEY(data, true)
+				elseif itemType == "item_pesos" then
+					NUI_SERVICE.CURRENCY.DROP_PESOS(data, true)
 				elseif itemType == "item_gold" then
 					NUI_SERVICE.CURRENCY.DROP_GOLD(data, true)
 				elseif itemType == "item_rol" then
@@ -944,8 +951,13 @@ local nuiService = {
 					gunbeltdescription = LANG.gunbeltdescription,
 					inventorymoneylabel = LANG.inventorymoneylabel,
 					inventorymoneydescription = LANG.inventorymoneydescription,
+					inventorypesoslabel = LANG.inventorypesoslabel,
+					inventorypesosdescription = LANG.inventorypesosdescription,
 					givemoney = LANG.givemoney,
 					dropmoney = LANG.dropmoney,
+					givepesos = LANG.givepesos,
+					droppesos = LANG.droppesos,
+					dropallpesos = LANG.dropallpesos,
 					inventorygoldlabel = LANG.inventorygoldlabel,
 					inventorygolddescription = LANG.inventorygolddescription,
 					givegold = LANG.givegold,
@@ -987,6 +999,8 @@ local nuiService = {
 					UseGoldItem = CONFIG.INVENTORY_UI.ADD_GOLD_ITEM,
 					AddGoldItem = CONFIG.INVENTORY_UI.ADD_GOLD_ITEM,
 					AddDollarItem = true,
+					UsePesosItem = CONFIG.INVENTORY_UI.ADD_PESOS_ITEM,
+					AddPesosItem = CONFIG.INVENTORY_UI.ADD_PESOS_ITEM,
 					AddAmmoItem = true,
 					UseRolItem = CONFIG.INVENTORY_UI.ADD_ROLL_ITEM,
 					AddRollItem = CONFIG.INVENTORY_UI.ADD_ROLL_ITEM,
@@ -1774,6 +1788,53 @@ local nuiService = {
 			UTILS.PLAY_ANIM(CONFIG.PICKUPS.ANIMATIONS.DROP.Money)
 			Wait(1000)
 			local sound <const> = CONFIG.SFX.MONEY_DROP
+			if sound.ENABLE then
+				PlaySoundFrontend(sound.NAME, sound.REF, true, 0)
+			end
+
+			NUI_SERVICE.INVENTORY.LOAD_ASYNC()
+		end,
+		DROP_PESOS = function(obj, skip)
+			if not CAN_USE_DROP then
+				return CORE.NotifyRightTip(LANG.cantdrophere, 5000)
+			end
+
+			if not CONFIG.INVENTORY_UI.ADD_PESOS_ITEM then
+				return
+			end
+
+			local data = obj
+			if not skip then
+				data = UTILS.EXPANDO_PROCESSING(obj)
+				if not Validator.IsValidNuiCallback(data.hsn) then
+					return
+				end
+			end
+
+			local quantity = tonumber(data.number)
+			if not quantity or quantity <= 0 then
+				return
+			end
+
+			local dropData = {}
+			local handle <const> = PICKUP_SERVICE.GET_UNIQUE_ID()
+			if not data.advanced then
+				local playerPed <const> = CACHE.Ped
+				local coords <const> = GetEntityCoords(playerPed, true, true)
+				local forward <const> = GetEntityForwardVector(playerPed)
+				local position = vector3(coords.x + forward.x * 1.6, coords.y + forward.y * 1.6, coords.z + forward.z * 1.6)
+				position = UTILS.GET_RANDOM_POSITION_AROUND(position, 1)
+				dropData = { handle = handle, amount = quantity, position = position }
+			else
+				dropData = { handle = handle, amount = quantity, position = data.advanced.position, rotation = data.advanced.rotation }
+			end
+
+			local result <const> = CORE.Callback.TriggerAwait("vorp_inventory:callback:DropPesos", dropData)
+			if not result then return end
+
+			UTILS.PLAY_ANIM(CONFIG.PICKUPS.ANIMATIONS.DROP.Pesos or CONFIG.PICKUPS.ANIMATIONS.DROP.Money)
+			Wait(1000)
+			local sound <const> = CONFIG.SFX.PESOS_DROP or CONFIG.SFX.MONEY_DROP
 			if sound.ENABLE then
 				PlaySoundFrontend(sound.NAME, sound.REF, true, 0)
 			end

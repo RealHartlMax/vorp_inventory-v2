@@ -355,6 +355,8 @@ local inventory <const> = {
 		local giveLabel
 		if data.type == "item_money" then
 			giveLabel = data.amount .. "$"
+		elseif data.type == "item_pesos" then
+			giveLabel = data.amount .. " pesos"
 		elseif data.type == "item_gold" then
 			giveLabel = data.amount .. " gold"
 		elseif data.type == "item_ammo" then

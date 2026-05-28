@@ -79,6 +79,7 @@ CORE.Callback.Register("vorpinventory:get_slots", function(source, cb, _)
         totalInvWeight = totalInvWeight,
         slots = character.invCapacity,
         money = character.money,
+        pesos = character.pesos or 0,
         gold = character.gold,
         rol = character.rol
     })

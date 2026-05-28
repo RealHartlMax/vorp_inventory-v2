@@ -27,6 +27,14 @@ INVENTORY.MAIN = {
             INVENTORY.DIALOG({ name: "money", id: 0 }, "item_money", "dropAdvanced", isAll);
         },
 
+        PESOS: function (isAll) {
+            INVENTORY.DIALOG({ name: "pesos", id: 0 }, "item_pesos", "drop", isAll);
+        },
+
+        PESOS_ADVANCED: function (isAll) {
+            INVENTORY.DIALOG({ name: "pesos", id: 0 }, "item_pesos", "dropAdvanced", isAll);
+        },
+
         GOLD: function (isAll) {
             INVENTORY.DIALOG({ name: "gold", id: 0 }, "item_gold", "drop", isAll);
         },
@@ -84,6 +92,53 @@ INVENTORY.MAIN = {
     },
 
     GIVE: {
+        PESOS: function () {
+            INVENTORY.DIALOG({ name: "pesos", id: 0 }, "item_pesos", "give");
+        },
+
+        PESOS_AMOUNT: function () {
+            const max = UTILS.PARSE_HUD_AMOUNT($("#pesos-value"));
+            if (!(max > 0)) {
+                return;
+            }
+            dialog.prompt({
+                title: LANGUAGE.prompttitle,
+                button: LANGUAGE.promptaccept,
+                required: true,
+                item: "pesos",
+                type: "item_pesos",
+                input: {
+                    type: "number",
+                    autofocus: "true",
+                },
+                validate: function (value) {
+                    const v = parseFloat(String(value).replace(",", "."));
+                    if (!(v > 0) || v > max) {
+                        dialog.close();
+                        return;
+                    }
+                    INVENTORY.SEND_GIVE({
+                        type: "item_pesos",
+                        id: 0,
+                        count: v,
+                    });
+                    return true;
+                },
+            });
+        },
+
+        PESOS_ALL: function () {
+            const v = UTILS.PARSE_HUD_AMOUNT($("#pesos-value"));
+            if (!(v > 0)) {
+                return;
+            }
+            INVENTORY.SEND_GIVE({
+                type: "item_pesos",
+                id: 0,
+                count: v,
+            });
+        },
+
         GOLD: function () {
             INVENTORY.DIALOG({ name: "gold", id: 0 }, "item_gold", "give");
         },
@@ -291,7 +346,7 @@ INVENTORY.MAIN = {
 
     REPLACE_LEGACY_FIXED_CELLS: function () {
         const $inv = $("#inventoryElement");
-        ["#item-money", "#item-gunbelt", "#item-gold", "#item-rol"].forEach(function (sel) {
+        ["#item-money", "#item-pesos", "#item-gunbelt", "#item-gold", "#item-rol"].forEach(function (sel) {
             $inv.children(sel).each(function () {
                 $(this).replaceWith('<div class="item" data-group="0" data-sortable="true"></div>');
             });
@@ -320,12 +375,12 @@ INVENTORY.MAIN = {
         if (!$el || !$el.length || !$el.is(".item"))
             return false;
         const id = $el.attr("id") || "";
-        if (id === "item-money" || id === "item-gunbelt" || id === "item-gold" || id === "item-rol")
+        if (id === "item-money" || id === "item-pesos" || id === "item-gunbelt" || id === "item-gold" || id === "item-rol")
             return false;
         const rowItem = $el.data("item");
         if (rowItem && typeof rowItem === "object")
             return false;
-        if (rowItem === "money" || rowItem === "gunbelt" || rowItem === "gold" || rowItem === "rol")
+        if (rowItem === "money" || rowItem === "pesos" || rowItem === "gunbelt" || rowItem === "gold" || rowItem === "rol")
             return false;
 
         return true;
@@ -346,7 +401,7 @@ INVENTORY.MAIN = {
         $inv.children(".item").each(function (i) {
             const $cell = $(this);
             const domId = $cell.attr("id") || "";
-            if (domId === "item-money" || domId === "item-gunbelt" || domId === "item-gold" || domId === "item-rol") {
+            if (domId === "item-money" || domId === "item-pesos" || domId === "item-gunbelt" || domId === "item-gold" || domId === "item-rol") {
                 $cell.removeClass("item--overflow-beyond-slots");
                 return;
             }
@@ -757,6 +812,10 @@ INVENTORY.MAIN = {
                 slots.push({ k: "money", slot: slot++ });
                 return;
             }
+            if (domId === "item-pesos" || rowItem === "pesos") {
+                slots.push({ k: "pesos", slot: slot++ });
+                return;
+            }
             if (domId === "item-gunbelt" || rowItem === "gunbelt") {
                 slots.push({ k: "gunbelt", slot: slot++ });
                 return;
@@ -850,6 +909,7 @@ INVENTORY.MAIN = {
             const rowItem = $row.data("item");
             const domId = $row.attr("id") || "";
             if (domId === "item-money" || rowItem === "money") return;
+            if (domId === "item-pesos" || rowItem === "pesos") return;
             if (domId === "item-gunbelt" || rowItem === "gunbelt") return;
             if (domId === "item-gold" || rowItem === "gold") return;
             if (domId === "item-rol" || rowItem === "rol") return;
@@ -1424,6 +1484,27 @@ INVENTORY.MAIN = {
         ];
     },
 
+    BUILD_PESOS_CTX: function () {
+        const L = INVENTORY.MAIN.CTX_MENU_GIVE_DROP_LABELS();
+        return [
+            {
+                text: INVENTORY.MAIN.CTX_MENU_GIVE_ROOT(),
+                items: [[
+                    { text: L.giveAmount, action: function () { INVENTORY.MAIN.GIVE.PESOS_AMOUNT(); } },
+                    { text: L.giveAll, action: function () { INVENTORY.MAIN.GIVE.PESOS_ALL(); } },
+                ]],
+            },
+            {
+                text: INVENTORY.MAIN.CTX_MENU_DROP_ROOT(),
+                items: [[
+                    { text: L.dropAmount, action: function () { INVENTORY.MAIN.DROP.PESOS(false); } },
+                    { text: L.dropAll, action: function () { INVENTORY.MAIN.DROP.PESOS(true); } },
+                    { text: L.dropAdvanced, action: function () { INVENTORY.MAIN.DROP.PESOS_ADVANCED(false); } },
+                ]],
+            },
+        ];
+    },
+
     BUILD_GOLD_CTX: function () {
         const L = INVENTORY.MAIN.CTX_MENU_GIVE_DROP_LABELS();
         return [
@@ -1490,6 +1571,7 @@ INVENTORY.MAIN = {
     APPEND_FIXED_HUD_SLOTS: function () {
         INVENTORY.MAIN.APPEND_GUNBELT_GRID();
         INVENTORY.MAIN.APPEND_MONEY_GRID();
+        INVENTORY.MAIN.APPEND_PESOS_GRID();
         INVENTORY.MAIN.APPEND_GOLD_GRID();
         INVENTORY.MAIN.APPEND_ROLL_GRID();
     },
@@ -1511,6 +1593,13 @@ INVENTORY.MAIN = {
         INVENTORY.MAIN.APPEND_MAIN_FIXED_CELL(LANGUAGE.inventorymoneylabel, LANGUAGE.inventorymoneydescription, "money", INVENTORY.MAIN.BUILD_MONEY_CTX());
         $("#item-money").data("item", "money");
         $("#item-money").data("inventory", "none");
+    },
+
+    APPEND_PESOS_GRID: function () {
+        if (!Config.UsePesosItem || !Config.AddPesosItem || $("#item-pesos").length) return;
+        INVENTORY.MAIN.APPEND_MAIN_FIXED_CELL(LANGUAGE.inventorypesoslabel || "Pesos", LANGUAGE.inventorypesosdescription || "", "pesos", INVENTORY.MAIN.BUILD_PESOS_CTX());
+        $("#item-pesos").data("item", "pesos");
+        $("#item-pesos").data("inventory", "none");
     },
 
     APPEND_GOLD_GRID: function () {
@@ -1600,6 +1689,8 @@ INVENTORY.MAIN = {
                 } else if (slot.k === "gunbelt") {
                     INVENTORY.MAIN.APPEND_EMPTY_SLOT();
                 } else if (slot.k === "money") {
+                    INVENTORY.MAIN.APPEND_EMPTY_SLOT();
+                } else if (slot.k === "pesos") {
                     INVENTORY.MAIN.APPEND_EMPTY_SLOT();
                 } else if (slot.k === "gold") {
                     INVENTORY.MAIN.APPEND_EMPTY_SLOT();
@@ -1809,6 +1900,10 @@ INVENTORY.MAIN = {
                 const domId = $row.attr("id") || "";
                 if (domId === "item-money" || rowItem === "money") {
                     slots.push({ k: "money", slot: slot++ });
+                    return;
+                }
+                if (domId === "item-pesos" || rowItem === "pesos") {
+                    slots.push({ k: "pesos", slot: slot++ });
                     return;
                 }
                 if (domId === "item-gunbelt" || rowItem === "gunbelt") {
@@ -2398,6 +2493,9 @@ $("document").ready(function () {
         if ((inMainGrid || inFixedStrip) && domId === "item-money") {
             $tooltip = $("<div/>").addClass("tooltip tooltip--rich tooltip--rich-compact-hud").css("pointer-events", "none").appendTo("body");
             INVENTORY.TOOLTIP.ADD_MONEY($tooltip);
+        } else if ((inMainGrid || inFixedStrip) && domId === "item-pesos" && Config.UsePesosItem && Config.AddPesosItem) {
+            $tooltip = $("<div/>").addClass("tooltip tooltip--rich tooltip--rich-compact-hud").css("pointer-events", "none").appendTo("body");
+            INVENTORY.TOOLTIP.ADD_PESOS($tooltip);
         } else if ((inMainGrid || inFixedStrip) && domId === "item-gold" && Config.UseGoldItem) {
             $tooltip = $("<div/>").addClass("tooltip tooltip--rich tooltip--rich-compact-hud").css("pointer-events", "none").appendTo("body");
             INVENTORY.TOOLTIP.ADD_GOLD($tooltip);
@@ -2504,6 +2602,12 @@ $("document").ready(function () {
 
             if (event.data.money || event.data.money === 0) {
                 $("#money-value").text(event.data.money.toFixed(2) + " ");
+            }
+
+            if (Config.UsePesosItem) {
+                if (event.data.pesos || event.data.pesos === 0) {
+                    $("#pesos-value").text(event.data.pesos.toFixed(2) + " ");
+                }
             }
 
             if (Config.UseGoldItem) {

@@ -151,6 +151,37 @@ local pickups <const>       = {
 		end
 	end,
 
+	SHARE_PESOS = function(handle, amount, position, uuid, value, rotation)
+		if value == 1 then
+			if not WORLD_PICKUPS[handle] then
+				local pesosLbl <const> = LANG.inventorypesoslabel or "Pesos"
+				local pickup <const> = {
+					label = pesosLbl .. " (" .. tostring(amount) .. ")",
+					entityId = 0,
+					amount = amount,
+					isMoney = false,
+					isPesos = true,
+					isGold = false,
+					isRoll = false,
+					coords = position,
+					uuid = uuid,
+					type = "item_standard",
+					name = "pesos_bag",
+					rotation = rotation,
+				}
+				WORLD_PICKUPS[handle] = pickup
+			end
+		else
+			local pickup <const> = WORLD_PICKUPS[handle]
+			if pickup then
+				if pickup.entityId and DoesEntityExist(pickup.entityId) then
+					DeleteEntity(pickup.entityId)
+				end
+				WORLD_PICKUPS[handle] = nil
+			end
+		end
+	end,
+
 	SHARE_GOLD = function(handle, amount, position, uuid, value, rotation)
 		if value == 1 then
 			if not WORLD_PICKUPS[handle] then
@@ -293,6 +324,9 @@ CreateThread(function()
 								if pickup.isMoney then
 									local pdata = { obj = key, uuid = pickup.uuid }
 									TriggerServerEvent("vorpinventory:onPickupMoney", pdata)
+								elseif pickup.isPesos then
+									local pdata = { obj = key, uuid = pickup.uuid }
+									TriggerServerEvent("vorpinventory:onPickupPesos", pdata)
 								elseif pickup.isGold then
 									local pdata = { obj = key, uuid = pickup.uuid }
 									TriggerServerEvent("vorpinventory:onPickupGold", pdata)

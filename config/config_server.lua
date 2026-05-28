@@ -1,6 +1,7 @@
 CONFIG                     = CONFIG or {}
 
 CONFIG.USE_GOLD_CURRENCY   = false -- you do not use gold currency leave this to false this will block any attempts to use gold
+CONFIG.USE_PESOS_CURRENCY  = false -- if true, pesos currency actions are enabled (requires vorp_core pesos support)
 
 -- TO USE THE OPEN SADLE BUTTON ADD YOUR STABLE LOGIC HERE
 -- this is a server side function
@@ -65,6 +66,14 @@ CONFIG.PLAYER_RESPAWN = {
             doctor = true
         },
         PERCENTAGE = 1.0, -- 0.1 = 10% of money 1.0 = 100% of money
+    },
+    PESOS = {
+        ENABLE     = false,
+        JOB_LOCK   = {
+            police = true,
+            doctor = true
+        },
+        PERCENTAGE = 1.0,
     },
     GOLD = {
         ENABLE     = false,
@@ -134,6 +143,11 @@ CONFIG.LOGS           = {
     colorgiveMoney          = 4286945,
     colormoneypickup        = 65280,
     colorDropMoney          = 16711680,
+
+    --Pesos log color
+    colorgivePesos          = 4286945,
+    colorpesospickup        = 65280,
+    colorDropPesos          = 16711680,
 
     --Item log color
     coloritemDrop           = 16711680,

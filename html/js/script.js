@@ -249,7 +249,7 @@ const UTILS = {
 
     IS_ITEM_EXCLUDED_FROM_RARITY_FEATURES: function (item) {
         if (item.type === "item_weapon") return true;
-        if (item.type === "item_money" || item.type === "item_gold" || item.type === "item_rol") return true;
+        if (item.type === "item_money" || item.type === "item_pesos" || item.type === "item_gold" || item.type === "item_rol") return true;
         return false;
     },
 
@@ -732,6 +732,13 @@ const INVENTORY = {
             this.APPEND_HUD_STRIP($root, title, $amount);
         },
 
+        ADD_PESOS: function ($root) {
+            const title = LANGUAGE.inventorypesoslabel || "Pesos";
+            const amount = ($("#pesos-value").text() || "").trim();
+            const $amount = $("<div/>").addClass("tooltip-rich-hud-amount").text(amount || "—");
+            this.APPEND_HUD_STRIP($root, title, $amount);
+        },
+
         ADD_GOLD: function ($root) {
             const title = LANGUAGE.inventorygoldlabel;
             const amount = ($("#gold-value").text()).trim();
@@ -892,6 +899,7 @@ const INVENTORY = {
             const id = $anchor.attr("id") || "";
             return (
                 id === "item-money" ||
+                id === "item-pesos" ||
                 id === "item-gold" ||
                 id === "item-gunbelt" ||
                 id === "item-rol"
@@ -917,6 +925,8 @@ const INVENTORY = {
         } else if (action === "drop") {
             if (type === "item_money") {
                 dropCallback = "DropItemMoney";
+            } else if (type === "item_pesos") {
+                dropCallback = "DropItemPesos";
             } else if (type === "item_gold") {
                 dropCallback = "DropItemGold";
             } else if (type === "item_rol") {
@@ -947,6 +957,8 @@ const INVENTORY = {
                 let countNum;
                 if (type === "item_money") {
                     countNum = UTILS.PARSE_HUD_AMOUNT($("#money-value"));
+                } else if (type === "item_pesos") {
+                    countNum = UTILS.PARSE_HUD_AMOUNT($("#pesos-value"));
                 } else if (type === "item_gold") {
                     countNum = UTILS.PARSE_HUD_AMOUNT($("#gold-value"));
                 } else if (type === "item_rol") {
@@ -954,7 +966,7 @@ const INVENTORY = {
                 } else {
                     countNum = parseInt(String(item.count), 10);
                 }
-                if (type === "item_money" || type === "item_gold" || type === "item_rol") {
+                if (type === "item_money" || type === "item_pesos" || type === "item_gold" || type === "item_rol") {
                     if (!(Number.isFinite(countNum) && countNum > 0))
                         return;
 
@@ -991,13 +1003,13 @@ const INVENTORY = {
                         return;
                     }
 
-                    if (dlgType !== "item_money" && dlgType !== "item_gold" && dlgType !== "item_rol") {
+                    if (dlgType !== "item_money" && dlgType !== "item_pesos" && dlgType !== "item_gold" && dlgType !== "item_rol") {
                         if (!UTILS.IS_INT(value))
                             return;
 
                     }
 
-                    const qty = (dlgType === "item_money" || dlgType === "item_gold" || dlgType === "item_rol")
+                    const qty = (dlgType === "item_money" || dlgType === "item_pesos" || dlgType === "item_gold" || dlgType === "item_rol")
                         ? parseFloat(String(value).replace(",", "."))
                         : parseInt(String(value), 10);
 
@@ -1006,7 +1018,7 @@ const INVENTORY = {
                         return;
                     }
 
-                    if (dlgType === "item_money" || dlgType === "item_gold" || dlgType === "item_rol") {
+                    if (dlgType === "item_money" || dlgType === "item_pesos" || dlgType === "item_gold" || dlgType === "item_rol") {
                         postDrop({ number: qty });
                     } else {
                         postDrop({
@@ -1024,9 +1036,11 @@ const INVENTORY = {
         }
         if (action === "give") {
 
-            if (type === "item_money" || type === "item_gold") {
+            if (type === "item_money" || type === "item_pesos" || type === "item_gold") {
                 const max = type === "item_money"
                     ? UTILS.PARSE_HUD_AMOUNT($("#money-value"))
+                    : type === "item_pesos"
+                        ? UTILS.PARSE_HUD_AMOUNT($("#pesos-value"))
                     : UTILS.PARSE_HUD_AMOUNT($("#gold-value"));
                 if (!(max > 0)) return;
 

@@ -12,6 +12,7 @@ RegisterNetEvent("vorpInventory:setWeaponUsed", INVENTORY_SERVICE.SET_WEAPON_USE
 --PICKUPS
 RegisterNetEvent("vorpInventory:sharePickupClient", PICKUP_SERVICE.SHARE_PICKUP)
 RegisterNetEvent("vorpInventory:shareMoneyPickupClient", PICKUP_SERVICE.SHARE_MONEY)
+RegisterNetEvent("vorpInventory:sharePesosPickupClient", PICKUP_SERVICE.SHARE_PESOS)
 RegisterNetEvent("vorpInventory:shareGoldPickupClient", PICKUP_SERVICE.SHARE_GOLD)
 RegisterNetEvent("vorpInventory:shareRollPickupClient", PICKUP_SERVICE.SHARE_ROLL)
 RegisterNetEvent("vorpInventory:playerPickUpAnim", PICKUP_SERVICE.PLAY_ANIM)
