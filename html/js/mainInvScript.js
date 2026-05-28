@@ -1410,10 +1410,11 @@ INVENTORY.MAIN = {
         }
     },
 
-    APPEND_MAIN_FIXED_CELL: function (label, description, item, data) {
+    APPEND_MAIN_FIXED_CELL: function (label, description, item, data, iconName) {
         const $strip = $("#inventoryFixedSlotsStrip");
         const $parent = $strip.length ? $strip : $("#inventoryElement");
-        $parent.append(`<div data-label='${label}' data-group='1' data-sortable="false" class='item item-filled item--fixed-strip' id='item-${item}'><span class='item-inv-icon' style='${UTILS.INVENTORY_SLOT_BACKGROUND_STYLE(`url(\"img/${item}.png\")`, "3.4vw", "5.05vh", "")}'></span></div>`);
+        const slotIcon = iconName || item;
+        $parent.append(`<div data-label='${label}' data-group='1' data-sortable="false" class='item item-filled item--fixed-strip' id='item-${item}'><span class='item-inv-icon' style='${UTILS.INVENTORY_SLOT_BACKGROUND_STYLE(`url(\"img/${slotIcon}.png\")`, "3.4vw", "5.05vh", "")}'></span></div>`);
 
         const opts = {
             offsetX: 1,
@@ -1597,7 +1598,7 @@ INVENTORY.MAIN = {
 
     APPEND_PESOS_GRID: function () {
         if (!Config.UsePesosItem || !Config.AddPesosItem || $("#item-pesos").length) return;
-        INVENTORY.MAIN.APPEND_MAIN_FIXED_CELL(LANGUAGE.inventorypesoslabel || "Pesos", LANGUAGE.inventorypesosdescription || "", "pesos", INVENTORY.MAIN.BUILD_PESOS_CTX());
+        INVENTORY.MAIN.APPEND_MAIN_FIXED_CELL(LANGUAGE.inventorypesoslabel || "Pesos", LANGUAGE.inventorypesosdescription || "", "pesos", INVENTORY.MAIN.BUILD_PESOS_CTX(), "money");
         $("#item-pesos").data("item", "pesos");
         $("#item-pesos").data("inventory", "none");
     },
