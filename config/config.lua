@@ -36,6 +36,8 @@ CONFIG.REMOVE_THROWABLE_WEAPONS          = true  -- If true, the throwable weapo
 
 CONFIG.ENABLE_PETROL_CAN                 = false -- If true, the petrol can will be enabled and will be usable the amo is also saved
 
+CONFIG.DISABLE_WEAPON_WHELL_ITEMS        = true  -- this wheel dont work so disable it
+
 -- HERE WE DECIDE IF PLAYERS CAN EQUIP MORE THAN ONE WEAPON TYPE FOR EXAMPLE CAN EQUIPP 2 LONG WEAPONS? OR 2 SHORT WEAPONS?
 --  IF YOU WANT TO DISABLE THIS JUST REMOVE IT FROM THE WEAPONS.LUA FILE the variables LongWeapon and ShortWeapon
 CONFIG.EQUIP_WEAPONS                     = {

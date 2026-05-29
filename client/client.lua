@@ -146,6 +146,9 @@ end
 CreateThread(function()
     local controlVar = false -- best to use variable than to check statebag every frame
     local isWalking = false
+    if CONFIG.DISABLE_WEAPON_WHELL_ITEMS then
+        EnableHudContext(-2106452847)
+    end
 
     repeat Wait(5000) until LocalPlayer.state.IsInSession
     repeat Wait(1000) until LocalPlayer.state?.Character?.CharId
