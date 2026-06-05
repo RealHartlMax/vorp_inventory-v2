@@ -1956,8 +1956,8 @@ local InventoryService <const> = {
 
 		if not isdead then return end
 
-		local function removeCurrency(currencyType, currencyAmount, percentage, list)
-			if not SHARED_UTILS.IS_VALUE_IN_ARRAY(job, list) then
+		local function removeCurrency(currencyType, currencyAmount, percentage, jobLock)
+			if not jobLock[job] then
 				if percentage == 1.0 then
 					character.removeCurrency(currencyType, currencyAmount)
 				else
@@ -1967,6 +1967,7 @@ local InventoryService <const> = {
 		end
 
 		local value <const> = CONFIG.PLAYER_RESPAWN
+
 		if value.MONEY.ENABLE then
 			removeCurrency(0, character.money, value.MONEY.PERCENTAGE, value.MONEY.JOB_LOCK)
 		end
@@ -1975,50 +1976,51 @@ local InventoryService <const> = {
 			removeCurrency(1, character.gold, value.GOLD.PERCENTAGE, value.GOLD.JOB_LOCK)
 		end
 
+		if value.ROLL.ENABLE then
+			removeCurrency(2, character.rol, value.ROLL.PERCENTAGE, value.ROLL.JOB_LOCK)
+		end
+
 		if value.ITEMS.ENABLE then
-			if not SHARED_UTILS.IS_VALUE_IN_ARRAY(job, value.ITEMS.JOB_LOCK) then
-				if value.ITEMS.ALL then
-					INVENTORY_API.MAIN.REMOVE_ALL_ITEMS(_source)
-				else
-					INVENTORY_API.MAIN.GET_INVENTORY(_source, function(Userinventory)
-						for _, itemData in ipairs(Userinventory) do
-							for _, itemName in ipairs(value.ITEMS.WHITELIST) do
-								if itemData.name ~= itemName then
-									INVENTORY_API.MAIN.SUB_ITEM_BY_ID(_source, itemData.id)
-								end
+			if not value.ITEMS.JOB_LOCK[job] then
+					if value.ITEMS.ALL then
+						INVENTORY_API.MAIN.REMOVE_ALL_ITEMS(_source)
+					else
+						INVENTORY_API.MAIN.GET_INVENTORY(_source, function(userInventory)
+							for _, itemData in ipairs(userInventory) do
+									if not value.ITEMS.WHITELIST[itemData.name] then
+										INVENTORY_API.MAIN.SUB_ITEM_BY_ID(_source, itemData.id)
+									end
 							end
-						end
-					end)
-				end
+						end)
+					end
 			end
 		end
 
 		if value.WEAPONS.ENABLE then
-			if not SHARED_UTILS.IS_VALUE_IN_ARRAY(job, value.WEAPONS.JOB_LOCK) then
-				if value.WEAPONS.ALL then
-					INVENTORY_API.MAIN.REMOVE_ALL_WEAPONS(_source)
-				else
-					INVENTORY_API.MAIN.GET_WEAPONS(_source, function(Userweapons)
-						for _, weaponData in ipairs(Userweapons) do
-							for _, v in ipairs(value.WEAPONS.WHITELIST) do
-								if v ~= weaponData.name then
-									INVENTORY_API.MAIN.REMOVE_WEAPON(_source, weaponData.id)
-									INVENTORY_API.MAIN.DELETE_WEAPON(_source, weaponData.id)
-								end
+			if not value.WEAPONS.JOB_LOCK[job] then
+					if value.WEAPONS.ALL then
+						INVENTORY_API.MAIN.REMOVE_ALL_WEAPONS(_source)
+					else
+						INVENTORY_API.MAIN.GET_WEAPONS(_source, function(userWeapons)
+							for _, weaponData in ipairs(userWeapons) do
+									if not value.WEAPONS.WHITELIST[weaponData.name] then
+										INVENTORY_API.MAIN.REMOVE_WEAPON(_source, weaponData.id)
+										INVENTORY_API.MAIN.DELETE_WEAPON(_source, weaponData.id)
+									end
 							end
-						end
-					end)
-				end
+						end)
+					end
 			end
 		end
 
 		if value.AMMO.ENABLE then
-			if not SHARED_UTILS.IS_VALUE_IN_ARRAY(job, value.AMMO.JOB_LOCK) then
+			if not value.AMMO.JOB_LOCK[job] then
 				TriggerClientEvent('syn_weapons:removeallammo', _source) -- syn script
 				INVENTORY_API.MAIN.CLEAR_GUNBELT_AMMO(_source)
 			end
 		end
 	end,
+
 	-- needs a list so we only allow throwables
 	DROP_THROWABLE_WEAPON = function(weaponId, weaponName)
 		local _source <const> = source
