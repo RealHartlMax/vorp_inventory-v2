@@ -12,13 +12,6 @@ local function getObjectIndexFromPed(weapon)
 	return nil
 end
 
-local LANTERN_HASHES <const> = {
-	[GetHashKey("WEAPON_MELEE_LANTERN")]           = true,
-	[GetHashKey("WEAPON_MELEE_LANTERN_HALLOWEEN")] = true,
-	[GetHashKey("WEAPON_MELEE_DAVY_LANTERN")]      = true,
-	[GetHashKey("WEAPON_MELEE_LANTERN_ELECTRIC")]  = true, -- Just incase it ever gets added
-}
-
 function GetGuidFromItemId(inventoryId, itemData, category, slotId)
 	local outItem = DataView.ArrayBuffer(8 * 13)
 
@@ -311,9 +304,7 @@ local Weapon <const> = LIB.Class:Create({
 				TriggerServerEvent("vorpinventory:setUsedWeapon", self.id, self:getUsed(), self:getUsed2())
 			end
 
-			local isLantern = LANTERN_HASHES[joaat(self.name)]
-
-			if not isLantern then
+			if not IsWeaponLantern then
 				HolsterPedWeapons(CACHE.Ped, true, false, true, false)
 				Wait(1000)
 				SetCurrentPedWeapon(CACHE.Ped, joaat("WEAPON_UNARMED"), false, 0, false, false)
@@ -427,7 +418,7 @@ local Weapon <const> = LIB.Class:Create({
 					end
 				end
 
-				if LANTERN_HASHES[weaponHash_0] then
+				if IsWeaponLantern(weaponHash_0) then
 					SetTimeout(500, function()
 						SetCurrentPedWeapon(CACHE.Ped, weaponHash_0, false, 0, false, false)
 					end)
@@ -476,7 +467,7 @@ local Weapon <const> = LIB.Class:Create({
 							0.0,
 							false
 						)
-						if LANTERN_HASHES[weaponHash_0] then
+						if IsWeaponLantern(weaponHash_0) then
 							SetTimeout(500, function()
 								SetCurrentPedWeapon(CACHE.Ped, weaponHash_0, false, 0, false, false)
 							end)
