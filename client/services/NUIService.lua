@@ -1190,7 +1190,7 @@ local nuiService = {
 				end
 				SetPedBlackboardBool(CACHE.Ped, 'GENERIC_WEAPON_CLEAN_PROMPT_AVAILABLE', false, -1)
 			else
-				if weaponStatus.degradation ~= 0.0 and weaponStatus.soot ~= 0.0 and weaponStatus.dirt ~= 0.0 then
+				if weaponStatus.degradation ~= 0.0 or weaponStatus.soot ~= 0.0 or weaponStatus.dirt ~= 0.0 then
 					SetPedBlackboardBool(CACHE.Ped, 'GENERIC_WEAPON_CLEAN_PROMPT_AVAILABLE', true, -1)
 				else
 					SetPedBlackboardBool(CACHE.Ped, 'GENERIC_WEAPON_CLEAN_PROMPT_AVAILABLE', false, -1)
@@ -1216,7 +1216,7 @@ local nuiService = {
 						if not result then
 							SetPedBlackboardBool(CACHE.Ped, 'GENERIC_WEAPON_CLEAN_PROMPT_AVAILABLE', false, -1)
 							ClearPedTasks(CACHE.Ped)
-							CORE.NotifyRightTip("You do not have the required item to clean this weapon", 5000)
+							CORE.NotifyRightTip(LANG.notRequiredItemToClean, 5000)
 							break
 						end
 					end

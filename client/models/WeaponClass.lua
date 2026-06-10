@@ -297,16 +297,20 @@ local Weapon <const> = LIB.Class:Create({
 			end
 		end,
 
-		UnequipWeapon         = function(self, skipTrigger)
+		UnequipWeapon = function(self, skipTrigger)
 			self:setUsed(false, true)
 			self:setUsed2(false, true)
 			if not skipTrigger then
 				TriggerServerEvent("vorpinventory:setUsedWeapon", self.id, self:getUsed(), self:getUsed2())
 			end
 
-			HolsterPedWeapons(CACHE.Ped, true, false, true, false);
-			Wait(1000)
-			SetCurrentPedWeapon(CACHE.Ped, joaat("WEAPON_UNARMED"), false, 0, false, false);
+			local isLantern = IsWeaponLantern(joaat(self.name)) == 1
+
+			if not isLantern then
+				HolsterPedWeapons(CACHE.Ped, true, false, true, false)
+				Wait(1000)
+				SetCurrentPedWeapon(CACHE.Ped, joaat("WEAPON_UNARMED"), false, 0, false, false)
+			end
 
 			self:RemoveWeaponFromPed()
 
@@ -416,6 +420,12 @@ local Weapon <const> = LIB.Class:Create({
 					end
 				end
 
+				if IsWeaponLantern(weaponHash_0) == 1 then
+					SetTimeout(500, function()
+						SetCurrentPedWeapon(CACHE.Ped, weaponHash_0, false, 0, false, false)
+					end)
+				end
+
 				if isWeaponPetrolCan then
 					local ammoType <const> = "AMMO_MOONSHINEJUG_MP"
 					local ammoInWeapon <const> = GetAmmoInPedWeapon(CACHE.Ped, weaponHash_0)
@@ -459,6 +469,11 @@ local Weapon <const> = LIB.Class:Create({
 							0.0,
 							false
 						)
+						if IsWeaponLantern(weaponHash_0) == 1 then
+							SetTimeout(500, function()
+								SetCurrentPedWeapon(CACHE.Ped, weaponHash_0, false, 0, false, false)
+							end)
+						end
 					end
 					self:loadAmmo()
 				end

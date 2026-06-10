@@ -1227,11 +1227,13 @@ input#secondarysearch:-ms-input-placeholder {
 
 .item .count {
     position: absolute;
-    left: 3.6vw;
-    top: 5.3vh;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    top: auto;
     z-index: 2;
     text-align: center;
-    font-size: 0.9vw;
+    font-size: 0.7vw;
     width: 2.2vw;
     height: 3.5vh;
     color: black;
@@ -1241,7 +1243,11 @@ input#secondarysearch:-ms-input-placeholder {
     background-position: center;
     background-size: 100% 100%;
     pointer-events: none;
-    line-height: 50px;
+    display: flex;
+    align-items: center;
+    padding-top: 3px;
+    justify-content: center;
+    line-height: 1;
 }
 
 .item .weapon-ammo-count {
