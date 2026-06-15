@@ -365,6 +365,7 @@ local Weapon <const> = LIB.Class:Create({
 			local isWeaponPetrolCan         = weaponHash_0 == `WEAPON_MOONSHINEJUG_MP`
 			local isLantern                 = IsWeaponLantern(weaponHash_0) == 1
 			local isFishingRod              = weaponHash_0 == `WEAPON_FISHINGROD`
+			local isKit                     = IsWeaponKit(weaponHash_0) == 1
 			local ammoCount                 = 0
 
 			if SHARED_DATA.WEAPONS[self.name] and SHARED_DATA.WEAPONS[self.name].NoAmmo then
@@ -372,7 +373,7 @@ local Weapon <const> = LIB.Class:Create({
 			end
 
 
-			if isWeaponMelee or isWeaponThrowable or isWeaponPetrolCan or isLantern or isFishingRod then
+			if isWeaponMelee or isWeaponThrowable or isWeaponPetrolCan or isLantern or isFishingRod or isKit then
 				if isWeaponPetrolCan then
 					ammoCount = math.max(0, self:getAmmo("AMMO_MOONSHINEJUG_MP"))
 				end
@@ -422,7 +423,7 @@ local Weapon <const> = LIB.Class:Create({
 					end
 				end
 
-				if isLantern or isFishingRod then
+				if isLantern or isFishingRod or isKit then
 					SetTimeout(500, function()
 						SetCurrentPedWeapon(CACHE.Ped, weaponHash_0, false, 0, false, false)
 					end)
