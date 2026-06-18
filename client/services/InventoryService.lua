@@ -135,6 +135,55 @@ local inventory <const> = {
 			CLIENT_ITEMS[item.item] = newItem
 		end
 	end,
+
+	HAS_LEFT_HOLSTER = function()
+		local function getCategoryOfComponentAtIndex(ped, componentIndex)
+			return Citizen.InvokeNative(0x9b90842304c938a7, ped, componentIndex, 0, Citizen.ResultAsInteger())
+		end
+		local function getNumComponentsInPed(ped)
+			return Citizen.InvokeNative(0x90403E8107B60E81, ped, Citizen.ResultAsInteger())
+		end
+
+		local function getComponent()
+			local ped = CACHE.Ped
+			local numComponents = getNumComponentsInPed(ped)
+			if not numComponents or numComponents < 1 then
+				return false
+			end
+			for componentIndex = 0, numComponents - 1, 1 do
+				local componentCategory = getCategoryOfComponentAtIndex(ped, componentIndex)
+				if componentCategory == `holsters_left` then
+					return true
+				end
+			end
+
+			return false
+		end
+		return getComponent()
+	end,
+
+	APPLY_OFF_HAND_HOLSTER = function()
+		local hasLeftHolster = INVENTORY_SERVICE.HAS_LEFT_HOLSTER()
+
+		local function applyShopItemToPed(ped, gender)
+			local comp = joaat("CLOTHING_ITEM_" .. gender .. "_OFFHAND_000_TINT_004")
+			Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, comp, false, false, false)
+			Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, comp, false, true, false)
+			--update ped variation
+			Citizen.InvokeNative(0xCC8CA3E88256E58F, ped, false, true, true, true, false)
+			Citizen.InvokeNative(0xAAB86462966168CE, ped, true)
+		end
+
+		if not hasLeftHolster then -- NEED TO HAVE ONE BECAUSE WE CANT HAVE DUAL WITHOUT ONE
+			-- MAKE WEAPON NOT DUAL WIELD BECAUSE A HOLSTER IS NEEDED
+			if CONFIG.DUAL_WIELD_HOLSTER_NEEDED then
+
+			else
+				local gender = IsPedMale(CACHE.Ped) and "M" or "F"
+				applyShopItemToPed(CACHE.Ped, gender)
+			end
+		end
+	end,
 	GET_LOADOUT = function(loadout)
 		RemoveAllPedWeapons(CACHE.Ped, true, true)
 		RemoveAllPedAmmo(CACHE.Ped)
@@ -171,14 +220,35 @@ local inventory <const> = {
 							newWeapon:setUsed(false)
 							newWeapon:setUsed2(false)
 						else
-							INVENTORY_SERVICE.SET_WEAPONS_ON_PLAYER(newWeapon:getId())
+							if newWeapon:getUsed() then
+								local oneHanded = IsWeaponOneHanded(joaat(newWeapon:getName())) == 1
+								local isWeaponAGun = Citizen.InvokeNative(0x705BE297EEBDB95D, joaat(newWeapon:getName()))
+								if not isWeaponAGun and not oneHanded then
+									INVENTORY_SERVICE.SET_WEAPONS_ON_PLAYER(newWeapon:getId())
+								end
+							end
 						end
 					end
 				end
 			end
 		end
-		Wait(2000)
 
+		if CONFIG.DUAL_WIELD then
+			-- must apply after the non dual weapons are added
+			local dual = {}
+			for _, weapon in pairs(PLAYER_INVENTORY.WEAPONS) do
+				if weapon:getUsed2() or weapon:getUsed() then
+					local oneHanded = IsWeaponOneHanded(joaat(weapon:getName())) == 1
+					local isWeaponAGun = Citizen.InvokeNative(0x705BE297EEBDB95D, joaat(weapon:getName()))
+					if isWeaponAGun and oneHanded then
+						table.insert(dual, weapon:getId())
+					end
+				end
+			end
+			WEAPON:AddDualWield(dual)
+		end
+
+		Wait(2000)
 		if CONFIG.USE_WEAPON_DEGRADATION then
 			-- need another loop because of get status method
 			local weaponsToSetStatus <const> = {}
@@ -196,7 +266,6 @@ local inventory <const> = {
 			end
 
 			SetTimeout(4000, function()
-				-- somehow we need to wait 2000 is not enough
 				for _, weaponId in pairs(weaponsToSetStatus) do
 					Wait(500)
 					local weapon <const> = PLAYER_INVENTORY.WEAPONS[weaponId]
@@ -208,7 +277,6 @@ local inventory <const> = {
 			end)
 		end
 
-		HidePedWeapons(CACHE.Ped, 2, true)
 		NUI_SERVICE.INVENTORY.GET_LOAD()
 	end,
 	IS_WEAPON_EQUIP_BLOCKED_BY_LIMIT = function(weaponId, weaponName)
@@ -298,28 +366,6 @@ local inventory <const> = {
 				0.0,
 				false
 			)
-
-			if HasPedGotWeapon(CACHE.Ped, joaat(weapon:getName()), 0, false) ~= 1 then
-				repeat
-					Wait(500)
-					GiveWeaponToPed(
-						CACHE.Ped,
-						joaat(weapon:getName()),
-						0,
-						false,
-						true,
-						0,
-						false,
-						0.5,
-						1.0,
-						0,
-						false,
-						0.0,
-						false
-					)
-					print(HasPedGotWeapon(CACHE.Ped, joaat(weapon:getName()), 0, false))
-				until HasPedGotWeapon(CACHE.Ped, joaat(weapon:getName()), 0, false) == 1
-			end
 
 			if not isMelee and not isThrowable then
 				weapon:setDefaultAttachments()

@@ -185,6 +185,7 @@ else
     local WEAPONS_UPDATE              = {}
     local isReloading                 = false
     local isBeltsEmpty                = false
+    local dualWieldLastClipAmmo       = {}
     local IsPedArmed                  = IsPedArmed
     local GetAmmoInPedWeapon          = GetAmmoInPedWeapon
     local GetPedWeaponObject          = GetPedWeaponObject
@@ -322,7 +323,7 @@ else
     local function isDualWielding()
         local weaponEntity <const> = GetCurrentPedWeaponEntityIndex(CACHE.Ped, 0)
         local weaponEntity2 <const> = GetCurrentPedWeaponEntityIndex(CACHE.Ped, 1)
-        return weaponEntity ~= 0 and weaponEntity2 ~= 0
+        return weaponEntity ~= `WEAPON_UNARMED` and weaponEntity2 ~= `WEAPON_UNARMED`
     end
 
     local function getEquippedWeaponId(attachPoint, weaponHash)
@@ -350,6 +351,67 @@ else
         if weaponData then return weaponData.weaponId end
 
         return UTILS.INVENTORY.GET_WEAPON_ID(weaponHash)
+    end
+
+    local function processWeaponShot(playerPedId, attachPoint)
+        local weaponEntity <const> = GetCurrentPedWeaponEntityIndex(playerPedId, attachPoint)
+        if weaponEntity == 0 or weaponEntity == `WEAPON_UNARMED` then return end
+
+        local _, weaponHash <const> = GetCurrentPedWeapon(playerPedId, attachPoint == 0, attachPoint, false)
+        if weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then return end
+
+        local ammoHash <const> = GetCurrentPedWeaponAmmoType(playerPedId, weaponEntity)
+        local ammoTypeName <const> = SHARED_DATA.AMMO_TYPE_HASH[ammoHash]
+        local beltAmmo <const> = ammoTypeName and PLAYER_AMMO_INFO.ammo[ammoTypeName]
+        if not ammoTypeName or not beltAmmo then return end
+
+        local weaponId <const> = getEquippedWeaponId(attachPoint, weaponHash)
+        if weaponId <= 0 then return end
+
+        local userWeapon <const> = PLAYER_INVENTORY.WEAPONS[weaponId]
+        if userWeapon then
+            userWeapon:subAmmoFromClip(ammoTypeName, 1)
+            NUI_SERVICE.INVENTORY.UPDATE_WEAPON(weaponId)
+        end
+
+        local fired <const> = WEAPONS_UPDATE[weaponId] and WEAPONS_UPDATE[weaponId].fired or 0
+        local maxAmmoInClip <const> = not BOWS[weaponHash] and GetMaxAmmoInClip(playerPedId, weaponHash, true) or userWeapon and userWeapon:getDefaultClipSize() or 0
+        WEAPONS_UPDATE[weaponId] = { ammoTypeName = ammoTypeName, fired = math.min(fired + 1, maxAmmoInClip) }
+    end
+
+    local function getDualWieldFiredAttachPoint(playerPedId, lastClipAmmo)
+        local _, weapon0 <const> = GetCurrentPedWeapon(playerPedId, false, 0, true)
+        local _, weapon1 <const> = GetCurrentPedWeapon(playerPedId, true, 1, true)
+
+        local _, clip0 = GetAmmoInClip(playerPedId, weapon0)
+        local _, clip1 = GetAmmoInClip(playerPedId, weapon1)
+
+        local prev0 = lastClipAmmo[0]
+        local prev1 = lastClipAmmo[1]
+        local fired0 = prev0 ~= nil and clip0 < prev0
+        local fired1 = prev1 ~= nil and clip1 < prev1
+
+        if fired0 and not fired1 then return 0 end
+        if fired1 and not fired0 then return 1 end
+
+        local heldWeapon <const> = GetPedCurrentHeldWeapon(playerPedId)
+        if heldWeapon == weapon0 then return 0 end
+        if heldWeapon == weapon1 then return 1 end
+
+        if fired0 then return 0 end
+        if fired1 then return 1 end
+
+        return nil
+    end
+
+    local function updateDualWieldClipAmmo(playerPedId)
+        local _, weapon0 <const> = GetCurrentPedWeapon(playerPedId, false, 0, true)
+        local _, weapon1 <const> = GetCurrentPedWeapon(playerPedId, true, 1, true)
+        local _, clip0 = GetAmmoInClip(playerPedId, weapon0)
+        local _, clip1 = GetAmmoInClip(playerPedId, weapon1)
+
+        dualWieldLastClipAmmo[0] = clip0
+        dualWieldLastClipAmmo[1] = clip1
     end
 
     local function buildReloadEntry(attachPoint, beltRemaining)
@@ -447,6 +509,7 @@ else
         -- could possibly add minigame if they fail it adds half ammo
 
         local ammoToAdd = {}
+
         for _, entry in ipairs(reloadEntries) do
             ammoToAdd[entry.ammoTypeName] = (ammoToAdd[entry.ammoTypeName] or 0) + entry.amountToLoad
             SetAmmoTypeForPedWeapon(CACHE.Ped, entry.weaponHash, GetHashKey(entry.ammoTypeName))
@@ -456,8 +519,16 @@ else
             AddAmmoToPedByType(CACHE.Ped, GetHashKey(ammoTypeName), amount, 0)
         end
 
+
         MakePedReload(CACHE.Ped)
-        repeat Wait(0) until IsPedReloading(CACHE.Ped)
+        local startTime = GetGameTimer()
+        repeat
+            Wait(0)
+        until IsPedReloading(CACHE.Ped) or GetGameTimer() - startTime > 2000
+        if GetGameTimer() - startTime > 2000 then
+            TaskReloadWeapon(CACHE.Ped, false)
+            CORE.NotifyRightTip("Reload failed, reload again", 2000)
+        end
         repeat
             Wait(0)
             DisableControlAction(0, `INPUT_ATTACK`, true)
@@ -516,30 +587,45 @@ else
 
                     if not isThrowable and not ismelee then
                         local isReloading <const> = IsPedReloading(playerPedId)
+                        if isReloading then
+                            dualWieldLastClipAmmo = {}
+                        end
                         if not isReloading then
                             sleep = 0
+                            local dualWielding <const> = isDualWielding()
                             local isShooting <const> = IsPedShooting(playerPedId) -- only works at 0 frames
                             if isShooting then
-                                local ammoHash <const> = GetCurrentPedWeaponAmmoType(playerPedId, GetPedWeaponObject(playerPedId, true))
-                                local ammoTypeName <const> = SHARED_DATA.AMMO_TYPE_HASH[ammoHash]
-                                local beltAmmo <const> = PLAYER_AMMO_INFO.ammo[ammoTypeName]
+                                if dualWielding then
+                                    local firedAttachPoint <const> = getDualWieldFiredAttachPoint(playerPedId, dualWieldLastClipAmmo)
+                                    if firedAttachPoint ~= nil then
+                                        processWeaponShot(playerPedId, firedAttachPoint)
+                                    end
+                                else
+                                    local ammoHash <const> = GetCurrentPedWeaponAmmoType(playerPedId, GetPedWeaponObject(playerPedId, true))
+                                    local ammoTypeName <const> = SHARED_DATA.AMMO_TYPE_HASH[ammoHash]
+                                    local beltAmmo <const> = PLAYER_AMMO_INFO.ammo[ammoTypeName]
 
-                                if ammoTypeName and beltAmmo then
-                                    local weaponId <const> = UTILS.INVENTORY.GET_WEAPON_ID(wephash)
-                                    local userWeapon = nil
-                                    if weaponId > 0 then
-                                        userWeapon = PLAYER_INVENTORY.WEAPONS[weaponId]
-                                        if userWeapon then
-                                            userWeapon:subAmmoFromClip(ammoTypeName, 1)
-                                            NUI_SERVICE.INVENTORY.UPDATE_WEAPON(weaponId)
+                                    if ammoTypeName and beltAmmo then
+                                        local weaponId <const> = UTILS.INVENTORY.GET_WEAPON_ID(wephash)
+                                        local userWeapon = nil
+                                        if weaponId > 0 then
+                                            userWeapon = PLAYER_INVENTORY.WEAPONS[weaponId]
+                                            if userWeapon then
+                                                userWeapon:subAmmoFromClip(ammoTypeName, 1)
+                                                NUI_SERVICE.INVENTORY.UPDATE_WEAPON(weaponId)
+                                            end
+
+                                            local fired <const> = WEAPONS_UPDATE[weaponId] and WEAPONS_UPDATE[weaponId].fired or 0
+
+                                            local maxAmmoInClip <const> = not BOWS[CACHE.Weapon] and GetMaxAmmoInClip(playerPedId, wephash, true) or userWeapon and userWeapon:getDefaultClipSize() or 0
+                                            WEAPONS_UPDATE[weaponId] = { ammoTypeName = ammoTypeName, fired = math.min(fired + 1, maxAmmoInClip) }
                                         end
-
-                                        local fired <const> = WEAPONS_UPDATE[weaponId] and WEAPONS_UPDATE[weaponId].fired or 0
-
-                                        local maxAmmoInClip <const> = not BOWS[CACHE.Weapon] and GetMaxAmmoInClip(playerPedId, wephash, true) or userWeapon and userWeapon:getDefaultClipSize() or 0
-                                        WEAPONS_UPDATE[weaponId] = { ammoTypeName = ammoTypeName, fired = math.min(fired + 1, maxAmmoInClip) }
                                     end
                                 end
+                            end
+
+                            if dualWielding then
+                                updateDualWieldClipAmmo(playerPedId)
                             end
                         end
                     end

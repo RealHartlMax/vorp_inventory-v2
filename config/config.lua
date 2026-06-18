@@ -30,6 +30,8 @@ CONFIG.USE_LANTERN_ON_BELT               = true  -- If true then lanterns will b
 
 CONFIG.DUAL_WIELD                        = true  -- If true dual wielding will be allowed.
 
+CONFIG.DUAL_WIELD_HOLSTER_NEEDED         = true  -- If true, the player will need to have a left holster to dual wield, other wise they cant equipp 2 guns to use dual wield (any clothing store will sell one)
+
 CONFIG.AUTO_EQUIP_USED_WEAPONS           = true  -- will add weapons to the weapon wheel if player left with them equipped when they rejoin only works if MANUAL_WEAPON_RELOAD is true
 
 CONFIG.REMOVE_THROWABLE_WEAPONS          = true  -- If true, the throwable weapons will be removed when fired, and if picked up they get theweapon back again
@@ -94,7 +96,7 @@ CONFIG.INVENTORY_UI = {
 
 	SADDLE_BUTTON = true,              -- enables saddle inventory button
 
-	SORT_BUTTON = true,              -- enables sort inventory button
+	SORT_BUTTON = true,                -- enables sort inventory button
 
 }
 

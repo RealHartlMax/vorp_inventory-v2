@@ -85,6 +85,7 @@ local Weapon <const> = LIB.Class:Create({
 
 	_getGuidFromItemId = function(_, inventoryId, itemData, category, slotId)
 		local outItem <const> = DataView.ArrayBuffer(8 * 13)
+		--INVENTORY_GET_GUID_FROM_ITEMID
 		local success <const> = Citizen.InvokeNative(0x886DFD3E185C8A89, inventoryId, itemData and itemData or 0, category, slotId, outItem:Buffer())
 		return success and outItem or nil
 	end,
@@ -93,6 +94,7 @@ local Weapon <const> = LIB.Class:Create({
 		local outGUID <const> = DataView.ArrayBuffer(8 * 13)
 		if not slot then slot = 1 end
 		local sHash <const>   = "SLOTID_WEAPON_" .. tostring(slot)
+		--_INVENTORY_MOVE_INVENTORY_ITEM
 		local success <const> = Citizen.InvokeNative(0xDCCAA7C3BFD88862, inventoryId, old, new, joaat(sHash), 1, outGUID:Buffer())
 		return success and outGUID or nil
 	end,
@@ -109,20 +111,20 @@ local Weapon <const> = LIB.Class:Create({
 		local inventoryId     = 1
 		local slotHash        = joaat(sHash)
 		local move            = false
-
+		--_ITEMDATABASE_IS_KEY_VALID
 		local isValid <const> = Citizen.InvokeNative(0x6D5D51B188333FD1, weaponHash, 0)
 		if not isValid then
 			print("Non valid weapon")
 			return false
 		end
 
-		local characterItem <const> = self:_getGuidFromItemId(inventoryId, nil, joaat("CHARACTER"), 0xA1212100)
+		local characterItem <const> = self:_getGuidFromItemId(inventoryId, nil, `CHARACTER`, `SLOTID_NONE`)
 		if not characterItem then
 			print("no characterItem")
 			return false
 		end
 
-		local weaponItem <const> = self:_getGuidFromItemId(inventoryId, characterItem:Buffer(), 923904168, -740156546)
+		local weaponItem <const> = self:_getGuidFromItemId(inventoryId, characterItem:Buffer(), `CARRIED_WEAPONS`, `SLOTID_CARRIED_WEAPONS`)
 		if not weaponItem then
 			print("no weaponItem")
 			return false
@@ -143,22 +145,23 @@ local Weapon <const> = LIB.Class:Create({
 				slot     = 0
 			end
 		end
-
+		--_INVENTORY_ADD_ITEM_WITH_GUID
 		local itemData <const> = DataView.ArrayBuffer(8 * 13)
 		local isAdded <const>  = Citizen.InvokeNative(0xCB5D11F9508A928D, inventoryId, itemData:Buffer(), weaponItem:Buffer(), weaponHash, slotHash, 1, reason)
 		if not isAdded then
 			print("Not added")
 			return false
 		end
-
+		--_INVENTORY_EQUIP_ITEM_WITH_GUID
 		local equipped <const> = Citizen.InvokeNative(0x734311E2852760D0, inventoryId, itemData:Buffer(), true)
 		if not equipped then
 			print("not able to equip")
 			return false
 		end
-
+		--SET_CURRENT_PED_WEAPON_BY_GUID
 		Citizen.InvokeNative(0x12FB95FE3D579238, CACHE.Ped, itemData:Buffer(), true, slot, false, false)
 		if move then
+			--SET_CURRENT_PED_WEAPON_BY_GUID
 			Citizen.InvokeNative(0x12FB95FE3D579238, CACHE.Ped, _EQUIPPED[1].guid, true, 1, false, false)
 			TriggerServerEvent("syn_weapons:applyDupeTint", id, itemData:Buffer(), weaponHash)
 		end
@@ -298,21 +301,45 @@ local Weapon <const> = LIB.Class:Create({
 		end,
 
 		UnequipWeapon         = function(self, skipTrigger)
+			local function setLeftWeapon()
+				-- WEAPON LEFT MUST BE SET TO NON DUAL WEAPON
+				for _, weapon in pairs(PLAYER_INVENTORY.WEAPONS) do
+					local isWeaponOneHanded <const> = IsWeaponOneHanded(joaat(weapon:getName())) == 1
+					local isWeaponAGun <const> = Citizen.InvokeNative(0x705BE297EEBDB95D, joaat(weapon:getName()))
+					if self.name ~= weapon:getName() and isWeaponOneHanded and isWeaponAGun then
+						weapon:setUsed2(false) -- updates server because bellow wont update if true
+						weapon:loadAmmo()
+						SetCurrentPedWeapon(CACHE.Ped, joaat(weapon:getName()), true, 2, false, false)
+						return true
+					end
+				end
+			end
+
+			if CONFIG.DUAL_WIELD then
+				setLeftWeapon()
+			end
+
 			self:setUsed(false, true)
 			self:setUsed2(false, true)
+
+
 			if not skipTrigger then
 				TriggerServerEvent("vorpinventory:setUsedWeapon", self.id, self:getUsed(), self:getUsed2())
 			end
 
 			local isLantern = IsWeaponLantern(joaat(self.name)) == 1
+			local isFishingRod = joaat(self.name) == `WEAPON_FISHINGROD`
+			local iskItWeapon = IsWeaponKit(joaat(self.name)) == 1
 
-			if not isLantern then
-				HolsterPedWeapons(CACHE.Ped, true, false, true, false)
-				Wait(1000)
-				SetCurrentPedWeapon(CACHE.Ped, joaat("WEAPON_UNARMED"), false, 0, false, false)
+			if not isLantern and not isFishingRod and not iskItWeapon then
+				if not self.used2 then
+					HolsterPedWeapons(CACHE.Ped, true, false, true, false)
+					Wait(1000)
+				end
 			end
 
 			self:RemoveWeaponFromPed()
+			-- ! removing ammo from ped here removes for all of the guns this type I think this cant be done here if dual wiled is on
 
 			SetPedAmmo(CACHE.Ped, joaat(self.name), 0)
 			for k, _ in pairs(self:getAllAmmo()) do
@@ -353,7 +380,12 @@ local Weapon <const> = LIB.Class:Create({
 			else
 				RemoveWeaponFromPed(CACHE.Ped, joaat(self.name), true, 0)
 			end
-			SetCurrentPedWeapon(CACHE.Ped, joaat("WEAPON_UNARMED"), false, 0, false, false);
+
+			if not self.used2 then
+				SetCurrentPedWeapon(CACHE.Ped, joaat("WEAPON_UNARMED"), false, 0, false, false);
+			else
+				SetCurrentPedWeapon(CACHE.Ped, joaat("WEAPON_UNARMED"), false, 1, false, false)
+			end
 		end,
 
 		equipwep              = function(self)
@@ -365,7 +397,7 @@ local Weapon <const> = LIB.Class:Create({
 			local isWeaponPetrolCan         = weaponHash_0 == `WEAPON_MOONSHINEJUG_MP`
 			local isLantern                 = IsWeaponLantern(weaponHash_0) == 1
 			local isFishingRod              = weaponHash_0 == `WEAPON_FISHINGROD`
-			local isKit                     = IsWeaponKit(weaponHash_0) == 1
+			local iskItWeapon               = IsWeaponKit(weaponHash_0) == 1
 			local ammoCount                 = 0
 
 			if SHARED_DATA.WEAPONS[self.name] and SHARED_DATA.WEAPONS[self.name].NoAmmo then
@@ -373,7 +405,7 @@ local Weapon <const> = LIB.Class:Create({
 			end
 
 
-			if isWeaponMelee or isWeaponThrowable or isWeaponPetrolCan or isLantern or isFishingRod or isKit then
+			if isWeaponMelee or isWeaponThrowable or isWeaponPetrolCan or isLantern or isFishingRod or iskItWeapon then
 				if isWeaponPetrolCan then
 					ammoCount = math.max(0, self:getAmmo("AMMO_MOONSHINEJUG_MP"))
 				end
@@ -423,7 +455,7 @@ local Weapon <const> = LIB.Class:Create({
 					end
 				end
 
-				if isLantern or isFishingRod or isKit then
+				if isLantern or isFishingRod or iskItWeapon then
 					SetTimeout(500, function()
 						SetCurrentPedWeapon(CACHE.Ped, weaponHash_0, false, 0, false, false)
 					end)
@@ -438,25 +470,84 @@ local Weapon <const> = LIB.Class:Create({
 					end
 				end
 			else
-				if self.used2 then
+				local function checkForDual()
+					for id, weapon in pairs(PLAYER_INVENTORY.WEAPONS) do
+						for _, equipped in pairs(_EQUIPPED) do
+							if equipped.id == id then
+								return true, weapon
+							end
+						end
+					end
+				end
+
+				self:setUsed(true)
+				if self.used2 and CONFIG.DUAL_WIELD then
 					if isWeaponAGun and isWeaponOneHanded then
+						local ammo = {}
+						local weaponUsed = nil
+						ammo[#ammo + 1] = self:getAllAmmo()
+						if self.used2 then
+							local bool, weapon = checkForDual()
+							if bool then
+								ammo[#ammo + 1] = weapon:getAllAmmo()
+								weaponUsed = weapon
+							end
+						end
+						-- in case ped has been reloaded we need weapon visible yes its free holster but its needed other wise put dual wield to false
+						if not CONFIG.DUAL_WIELD_HOLSTER_NEEDED then
+							INVENTORY_SERVICE.APPLY_OFF_HAND_HOLSTER()
+						end
+
+						-- YES FOR DUAL WIELDING WE MUST DO THIS HACKY STUFF TO ENSURE AMMO IS SET CORRECTLY
 						self:_addWeapon(self.name, 1, self.id)
-					else
-						--DONT THINK THIS IS USED? dual is only for one handed weapons?
-						--local _, weaponHash_1 = GetCurrentPedWeapon(CACHE.Ped, false, 0, false)
-						--local _, weaponHash_1 = GetCurrentPedWeapon(CACHE.Ped, false, 0, false)
-						--GiveWeaponToPed(CACHE.Ped, weaponHash_1, 1, true, true, 2, false, 0.5, 1.0, 752097756, false, 0.0, false)
-						--GiveWeaponToPed(CACHE.Ped, weaponHash_0, 1, true, true, 3, false, 0.5, 1.0, 752097756, false, 0.0, false)
-						--SetCurrentPedWeapon(CACHE.Ped, weaponHash_1, false, 1, false, false)
-						--SetCurrentPedWeapon(CACHE.Ped, weaponHash_0, false, 0, false, false)
+						--self:holsterDualWieldSlots()
+						if self.name ~= weaponUsed.name then
+							local ammoTotal = {} -- ONLY IF GUNS ARE DIFERENT
+							for _, ammotable in pairs(ammo) do
+								for ammoType, amount in pairs(ammotable) do
+									if SHARED_DATA.AMMO_TYPE_HASH[joaat(ammoType)] then
+										if not ammoTotal[ammoType] then
+											ammoTotal[ammoType] = amount
+										else
+											ammoTotal[ammoType] = ammoTotal[ammoType] + amount
+										end
+									end
+								end
+							end
+
+							for ammoType, amount in pairs(ammoTotal) do
+								SetPedAmmoByType(CACHE.Ped, joaat(ammoType), amount)
+
+								if weaponUsed:getUsed() and not weaponUsed:getUsed2() then
+									SetPedAmmo(CACHE.Ped, joaat(weaponUsed.name), amount)
+								end
+
+								if self:getUsed2() then
+									SetPedAmmo(CACHE.Ped, joaat(self.name), amount)
+								end
+							end
+						else
+							-- WEAPON IS THE SAME
+							local ammoTotal = 0
+							for _, ammotable in pairs(ammo) do
+								for ammoType, amount in pairs(ammotable) do
+									if SHARED_DATA.AMMO_TYPE_HASH[joaat(ammoType)] then
+										SetPedAmmoByType(CACHE.Ped, joaat(ammoType), amount)
+										ammoTotal = ammoTotal + amount
+									end
+								end
+							end
+							SetPedAmmo(CACHE.Ped, joaat(self.name), ammoTotal)
+						end
+
+						Wait(1000)
+						MakePedReload(CACHE.Ped) -- adds the ammo to clip
 					end
 				else
-					if isWeaponAGun and isWeaponOneHanded then
-						-- one handed guns like revolvers
+					if isWeaponAGun and isWeaponOneHanded and CONFIG.DUAL_WIELD then
 						self:_addWeapon(self.name, 0, self.id)
+						self:loadAmmo()
 					else
-						-- long weapons like rifles
-						ammoCount = self:getAmmo(self.name)
 						GiveWeaponToPed(
 							CACHE.Ped,
 							joaat(self.name),
@@ -472,31 +563,14 @@ local Weapon <const> = LIB.Class:Create({
 							0.0,
 							false
 						)
+						self:loadAmmo()
 					end
-					self:loadAmmo()
 				end
 			end
 		end,
 
-		addDualWield          = function(self)
-			if not CONFIG.DUAL_WIELD then return end
-			AddWardrobeInventoryItem("CLOTHING_ITEM_M_OFFHAND_000_TINT_004", 0xF20B6B4A)
-			AddWardrobeInventoryItem("UPGRADE_OFFHAND_HOLSTER", 0x39E57B01)
-			if self.used2 then
-				local weaponHash_0 <const>      = joaat(self.name)
-				local isWeaponAGun <const>      = Citizen.InvokeNative(0x705BE297EEBDB95D, weaponHash_0)
-				local isWeaponOneHanded <const> = Citizen.InvokeNative(0xD955FEE4B87AFA07, weaponHash_0)
-				if isWeaponAGun and isWeaponOneHanded then
-					self:_addWeapon(self.name, 1, self.id)
-				else
-					--DONT THINK THIS IS USED? dual is only for one handed weapons
-					--local _, weaponHash_1 = GetCurrentPedWeapon(CACHE.Ped, false, 0, false)
-					--GiveWeaponToPed(CACHE.Ped, weaponHash_1, 1, true, true, 2, false, 0.5, 1.0, 752097756, false, 0.0, false)
-					--GiveWeaponToPed(CACHE.Ped, weaponHash_0, 1, true, true, 3, false, 0.5, 1.0, 752097756, false, 0.0, false)
-					--SetCurrentPedWeapon(CACHE.Ped, weaponHash_1, false, 1, false, false)
-					--SetCurrentPedWeapon(CACHE.Ped, weaponHash_0, false, 0, false, false)
-				end
-			end
+		addWeaponDualWield    = function(self, name, slot, id)
+			self:_addWeapon(name, slot, id)
 		end,
 
 		loadComponents        = function(self)
@@ -681,6 +755,7 @@ local Weapon <const> = LIB.Class:Create({
 		loadAmmo             = function(self)
 			-- need a config to disable certain ammo types from weapons like dynamite etc
 			--	DisableAmmoTypeForPedWeapon(CACHE.Ped, joaat(self.name), joaat(type))
+
 			for type, amount in pairs(self.ammo) do
 				if SHARED_DATA.AMMO_TYPE_HASH[joaat(type)] then
 					SetAmmoTypeForPedWeapon(CACHE.Ped, joaat(self.name), joaat(type))
@@ -688,16 +763,13 @@ local Weapon <const> = LIB.Class:Create({
 					local bows <const> = { [`WEAPON_BOW`] = true, [`WEAPON_BOW_IMPROVED`] = true }
 					if bows[joaat(self.name)] then
 						if amount > 0 then
-							--SetPedAmmo(CACHE.Ped, joaat(self.name), math.min(amount, self:getDefaultClipSize()))
 							SetPedAmmoByType(CACHE.Ped, joaat(type), math.min(amount, self:getDefaultClipSize()))
 						end
 					else
 						if amount > 0 then
 							if amount >= GetMaxAmmoInClip(CACHE.Ped, joaat(self.name), true) then
-								--SetPedAmmo(CACHE.Ped, joaat(self.name), math.min(amount, GetMaxAmmoInClip(CACHE.Ped, joaat(self.name), true)))
 								SetPedAmmoByType(CACHE.Ped, joaat(type), math.min(amount, GetMaxAmmoInClip(CACHE.Ped, joaat(self.name), true)))
 							else
-								--SetPedAmmo(CACHE.Ped, joaat(self.name), amount)
 								SetPedAmmoByType(CACHE.Ped, joaat(type), amount)
 							end
 						else
@@ -708,7 +780,7 @@ local Weapon <const> = LIB.Class:Create({
 						local ammoInWeapon <const> = GetAmmoInPedWeapon(CACHE.Ped, joaat(self.name))
 						local maxAllowed           = amount
 						if self:getDefaultClipSize() > 0 then
-							maxAllowed = math.min(amount, self:getDefaultClipSize())
+							maxAllowed = self:getDefaultClipSize()
 						end
 
 						if ammoInWeapon > maxAllowed then
@@ -727,7 +799,8 @@ local Weapon <const> = LIB.Class:Create({
 			if not self.canDegrade then return end
 
 			local weaponObject <const> = getObjectIndexFromPed(joaat(self.name))
-			if not weaponObject then return print("weapon object not found") end
+			if not weaponObject then return print("weapon object not found", self.name) end
+
 
 			SetWeaponDegradation(weaponObject, self.degradation)
 			SetWeaponDamage(weaponObject, self.damage, false)
@@ -764,4 +837,106 @@ function WEAPON:Register(data)
 	local weaponClass <const> = WEAPON:New(data)
 	PLAYER_INVENTORY.WEAPONS[data.id] = weaponClass
 	return weaponClass
+end
+
+--WHEN LOADING IN IF DUAL WIELDING IS ACTIVE DO THIS HACKY WAY TO ADD THE AMMO
+function WEAPON:AddDualWield(weapons)
+	if not CONFIG.DUAL_WIELD then return end
+
+	if CONFIG.DUAL_WIELD_HOLSTER_NEEDED then
+		local hasLeftHolster = INVENTORY_SERVICE.HAS_LEFT_HOLSTER()
+		if not hasLeftHolster then
+			-- dont let it equipp if they dont have a left holster
+			for k, weaponId in pairs(weapons) do
+				local weapon <const> = PLAYER_INVENTORY.WEAPONS[weaponId]
+				if weapon and weapon:getUsed2() then
+					weapon:setUsed2(false)
+					-- remove from weapons
+					table.remove(weapons, k)
+					break
+				end
+			end
+		else
+			AddWardrobeInventoryItem("CLOTHING_ITEM_M_OFFHAND_000_TINT_004", 0xF20B6B4A)
+			AddWardrobeInventoryItem("UPGRADE_OFFHAND_HOLSTER", 0x39E57B01)
+		end
+	else
+		AddWardrobeInventoryItem("CLOTHING_ITEM_M_OFFHAND_000_TINT_004", 0xF20B6B4A)
+		AddWardrobeInventoryItem("UPGRADE_OFFHAND_HOLSTER", 0x39E57B01)
+	end
+
+	if #weapons == 1 then
+		local weapon <const> = PLAYER_INVENTORY.WEAPONS[weapons[1]]
+		if weapon then
+			weapon:addWeaponDualWield(weapon:getName(), 0, weapon:getId())
+		end
+		return
+	end
+
+	local getUsed = {}
+	local getUsed2 = {}
+	local ammo = {}
+	for _, weapon in pairs(weapons) do
+		local weapon <const> = PLAYER_INVENTORY.WEAPONS[weapon]
+		if weapon then
+			if not weapon:getUsed2() then
+				table.insert(getUsed, weapon:getId())
+				ammo[#ammo + 1] = weapon:getAllAmmo()
+			else
+				table.insert(getUsed2, weapon:getId())
+				ammo[#ammo + 1] = weapon:getAllAmmo()
+			end
+		end
+	end
+
+	for _, weapon in pairs(getUsed) do
+		local weapon <const> = PLAYER_INVENTORY.WEAPONS[weapon]
+		if weapon then
+			weapon:addWeaponDualWield(weapon:getName(), 0, weapon:getId())
+			break
+		end
+	end
+
+	for _, weapon in pairs(getUsed2) do
+		local weapon <const> = PLAYER_INVENTORY.WEAPONS[weapon]
+		if weapon then
+			weapon:addWeaponDualWield(weapon:getName(), 1, weapon:getId())
+			break
+		end
+	end
+
+	Wait(1000)
+
+	local DUAL_AMMO = {}
+	for _, ammotable in pairs(ammo) do
+		for ammoType, amount in pairs(ammotable) do
+			if SHARED_DATA.AMMO_TYPE_HASH[joaat(ammoType)] then
+				if not DUAL_AMMO[ammoType] then
+					DUAL_AMMO[ammoType] = amount
+				else
+					DUAL_AMMO[ammoType] = DUAL_AMMO[ammoType] + amount
+				end
+			end
+		end
+	end
+
+	for ammoType, amount in pairs(DUAL_AMMO) do
+		SetPedAmmoByType(CACHE.Ped, joaat(ammoType), amount)
+
+		for _, weapon in pairs(getUsed2) do
+			local weapon <const> = PLAYER_INVENTORY.WEAPONS[weapon]
+			if weapon then
+				SetPedAmmo(CACHE.Ped, joaat(weapon:getName()), amount)
+			end
+		end
+
+		for _, weapon in pairs(getUsed) do
+			local weapon <const> = PLAYER_INVENTORY.WEAPONS[weapon]
+			if weapon then
+				SetPedAmmo(CACHE.Ped, joaat(weapon:getName()), amount)
+			end
+		end
+	end
+	Wait(1000)
+	MakePedReload(CACHE.Ped)
 end

@@ -21,10 +21,15 @@ AddEventHandler('inv:givestatus', function(value)
 end)
 
 
+local function isDualWielding()
+	-- IF EXISTS IN RIGHT HOLSTER OR IN HAND THEN WE WANT TO ADD DUAL
+	local _, weapon = GetCurrentPedWeapon(CACHE.Ped, false, 0, true) -- in right hand
+	local _, weapon2 = GetCurrentPedWeapon(CACHE.Ped, true, 2, true) -- in right holster
+	return weapon ~= `WEAPON_UNARMED` or weapon2 ~= 0
+end
 
 local function useWeapon(data)
 	data.type = data.type or "item_weapon"
-	local ped = CACHE.Ped
 	local weaponId = tonumber(data.id)
 	local weapon <const> = PLAYER_INVENTORY.WEAPONS[weaponId]
 	if not weapon then
@@ -44,20 +49,29 @@ local function useWeapon(data)
 	end
 
 	local weapName = joaat(weapon:getName())
-	local isWeaponAGun = Citizen.InvokeNative(0x705BE297EEBDB95D, weapName)
-	local isWeaponOneHanded = Citizen.InvokeNative(0xD955FEE4B87AFA07, weapName)
-	local isArmed = IsPedArmed(ped, 4) == 1
 	local isThrowable = IsWeaponThrowable(weapon:getName()) == 1
 	local isMelee = IsWeaponMeleeWeapon(weapon:getName()) == 1
+	local isDualWeapon = isDualWielding()
+	local isOneHanded = IsWeaponOneHanded(joaat(weapon:getName())) == 1
 
-	if (isWeaponAGun and isWeaponOneHanded) and isArmed and CONFIG.DUAL_WIELD then
+	if isDualWeapon and CONFIG.DUAL_WIELD and isOneHanded then
+		if CONFIG.DUAL_WIELD_HOLSTER_NEEDED then
+			-- PLAYER NEEDS TO HAVE THE HOLSTER IN THE LEFT HAND TO DUAL WIELD
+			local hasLeftHolster = INVENTORY_SERVICE.HAS_LEFT_HOLSTER()
+			if not hasLeftHolster then
+				CORE.NotifyRightTip("You need to have a left holster to dual wield", 5000)
+				return
+			end
+		end
+
 		AddWardrobeInventoryItem("CLOTHING_ITEM_M_OFFHAND_000_TINT_004", 0xF20B6B4A)
 		AddWardrobeInventoryItem("UPGRADE_OFFHAND_HOLSTER", 0x39E57B01)
 
+		weapon:setUsed2(true, true)
+		weapon:setUsed(true, true)
 		weapon:equipwep()
 		weapon:loadComponents()
-		weapon:setUsed(true, true)
-		weapon:setUsed2(true, true)
+
 		SetTimeout(1000, function()
 			weapon:setStatus()
 		end)
@@ -66,6 +80,8 @@ local function useWeapon(data)
 		local isDual = true
 		TriggerEvent("vorp_inventory:onWeaponEquipped", weapon:getAllComponents(), weaponId, weapon:getName(), isDual, weapon.defaultAttachments)
 	else
+		weapon:setUsed2(false, true)
+		weapon:setUsed(true, true)
 		weapon:equipwep()
 		if not isThrowable and not isMelee then
 			weapon:loadComponents()
@@ -74,8 +90,6 @@ local function useWeapon(data)
 				weapon:setStatus()
 			end)
 		end
-
-		weapon:setUsed(true, true)
 
 		TriggerServerEvent("syn_weapons:weaponused", data)
 		local isDual = false
@@ -1041,7 +1055,6 @@ local nuiService = {
 			if not result then return end
 
 			if weapon:getUsed() then
-				weapon:setUsed(false, true)
 				weapon:UnequipWeapon()
 			end
 
