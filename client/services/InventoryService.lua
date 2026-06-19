@@ -186,7 +186,6 @@ local inventory <const> = {
 	end,
 	GET_LOADOUT = function(loadout)
 		RemoveAllPedWeapons(CACHE.Ped, true, true)
-		RemoveAllPedAmmo(CACHE.Ped)
 		Wait(1000)
 
 		for _, weapon in ipairs(loadout) do

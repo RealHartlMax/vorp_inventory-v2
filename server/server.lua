@@ -40,6 +40,7 @@ AddEventHandler('playerDropped', function()
         local weapons <const> = USERS_WEAPONS.default
 
         if USERS_AMMO_DATA[_source] then
+            INVENTORY_SERVICE.AMMO.SAVE(_source)
             USERS_AMMO_DATA[_source] = nil
         end
 

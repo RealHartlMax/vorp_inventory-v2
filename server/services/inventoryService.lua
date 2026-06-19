@@ -1815,6 +1815,23 @@ local InventoryService <const> = {
 			end
 		end,
 
+		SAVE = function(source)
+			local userAmmoData <const> = USERS_AMMO_DATA[source]
+			if not userAmmoData then return end
+
+			local charId <const> = userAmmoData.charidentifier
+			local encodedAmmo <const> = json.encode(userAmmoData.ammo)
+
+			if LAST_SAVED_AMMO_DATA[charId] ~= encodedAmmo then
+				LAST_SAVED_AMMO_DATA[charId] = encodedAmmo
+
+				DB_SERVICE.ASYNC.UPDATE("UPDATE characters SET ammo=@ammo WHERE charidentifier=@charidentifier", {
+					charidentifier = charId,
+					ammo = encodedAmmo,
+				})
+			end
+		end,
+
 		LOAD_ALL = function()
 			local _source = source
 			local sourceCharacter = getCharacter(_source)
@@ -3245,18 +3262,8 @@ CreateThread(function()
 
 	LIB.SetInterval(function()
 		local function updateAmmo()
-			for _, value in pairs(USERS_AMMO_DATA) do
-				local charId <const> = value.charidentifier
-				local encodedAmmo <const> = json.encode(value.ammo)
-
-				if LAST_SAVED_AMMO_DATA[charId] ~= encodedAmmo then
-					LAST_SAVED_AMMO_DATA[charId] = encodedAmmo
-
-					local query <const> = "UPDATE characters SET ammo=@ammo WHERE charidentifier=@charidentifier"
-					local params <const> = { charidentifier = charId, ammo = encodedAmmo }
-
-					DB_SERVICE.ASYNC.UPDATE(query, params)
-				end
+			for source in pairs(USERS_AMMO_DATA) do
+				InventoryService.AMMO.SAVE(source)
 			end
 		end
 
