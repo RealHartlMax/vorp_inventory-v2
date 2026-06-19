@@ -219,11 +219,14 @@ local inventory <const> = {
 							newWeapon:setUsed(false)
 							newWeapon:setUsed2(false)
 						else
-							if newWeapon:getUsed() then
-								local oneHanded = IsWeaponOneHanded(joaat(newWeapon:getName())) == 1
-								local isWeaponAGun = Citizen.InvokeNative(0x705BE297EEBDB95D, joaat(newWeapon:getName()))
-								if not isWeaponAGun and not oneHanded then
+							if newWeapon:getUsed() and not newWeapon:getUsed2() then
+								if not CONFIG.DUAL_WIELD then
 									INVENTORY_SERVICE.SET_WEAPONS_ON_PLAYER(newWeapon:getId())
+								else
+									local oneHanded <const> = IsWeaponOneHanded(joaat(newWeapon:getName())) == 1
+									if not oneHanded then
+										INVENTORY_SERVICE.SET_WEAPONS_ON_PLAYER(newWeapon:getId())
+									end
 								end
 							end
 						end
