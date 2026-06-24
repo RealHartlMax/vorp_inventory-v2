@@ -312,7 +312,6 @@ local InventoryService <const> = {
 			BEING_ASKED[source] = true
 
 			local result <const> = CORE.Callback.TriggerAwait("vorp_inventory:callback:wantToGiveItems", target, data)
-			print(result, "result")
 
 			BEING_ASKED[target] = nil
 			BEING_ASKED[source] = nil
@@ -325,33 +324,46 @@ local InventoryService <const> = {
 				return CORE.NotifyRightTip(_source, LANG.cantgiveyourself, 5000)
 			end
 
-			local sourceCharacter <const> = getCharacter(_source)
-			local targetCharacter <const> = getCharacter(target)
+			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then return end
+			SV_UTILS.PROCESS.ADD_USER(_source)
+
+			local sourceCharacter = getCharacter(_source)
+			local targetCharacter = getCharacter(target)
 			if not targetCharacter or not sourceCharacter then
-				return TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
 			local sourceMoney <const> = sourceCharacter.money
 			local charid <const> = sourceCharacter.charIdentifier
 			if not INVENTORY_SERVICE.IS_NEW_PLAYER(_source, charid) then
-				return TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
 			if sourceMoney < amount then
 				CORE.NotifyRightTip(_source, LANG.NotEnoughMoney, 3000)
-				return TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
-			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then return end
-			SV_UTILS.PROCESS.ADD_USER(_source)
-
 			if BEING_ASKED[target] then
-				return CORE.NotifyRightTip(_source, LANG.playerAlreadyBeingAsked, 5000)
+				CORE.NotifyRightTip(_source, LANG.playerAlreadyBeingAsked, 5000)
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
 			if not INVENTORY_SERVICE.GIVE.ASK_TO_GIVE_ITEMS(_source, target, { type = "item_money", amount = amount }) then
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
+
+			sourceCharacter = getCharacter(_source)
+			targetCharacter = getCharacter(target)
+			if not targetCharacter or not sourceCharacter then
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
+			end
+
+			if sourceMoney < amount then
+				CORE.NotifyRightTip(_source, LANG.NotEnoughMoney, 3000)
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
+			end
+
 
 			sourceCharacter.removeCurrency(0, amount)
 			targetCharacter.addCurrency(0, amount)
@@ -366,7 +378,6 @@ local InventoryService <const> = {
 			local info <const> = { source = _source, name = CONFIG.LOGS.webhookname, title = title, description = description, webhook = CONFIG.LOGS.webhook, color = CONFIG.LOGS.colorgiveMoney, }
 			SV_UTILS.DISCORD_LOG(info)
 
-			TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
 			SV_UTILS.PROCESS.REMOVE_USER(_source)
 		end,
 
@@ -432,31 +443,43 @@ local InventoryService <const> = {
 				return CORE.NotifyRightTip(_source, LANG.cantgiveyourself, 5000)
 			end
 
-			local sourceCharacter <const> = getCharacter(_source)
-			local targetCharacter <const> = getCharacter(target)
-			if not sourceCharacter or not targetCharacter then return end
+			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then return end
+			SV_UTILS.PROCESS.ADD_USER(_source)
+
+			local sourceCharacter = getCharacter(_source)
+			local targetCharacter = getCharacter(target)
+			if not sourceCharacter or not targetCharacter then
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
+			end
 
 			if not INVENTORY_SERVICE.IS_NEW_PLAYER(_source, sourceCharacter.charIdentifier) then
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
 			if not INVENTORY_SERVICE.IS_NEW_PLAYER(target, targetCharacter.charIdentifier) then
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
-			local sourceGold <const> = sourceCharacter.gold
+			local sourceGold = sourceCharacter.gold
 			if sourceGold < amount then
 				CORE.NotifyRightTip(_source, LANG.NotEnoughGold, 3000)
-				return TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
-
-			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then
-				return
-			end
-			SV_UTILS.PROCESS.ADD_USER(_source)
 
 			if not INVENTORY_SERVICE.GIVE.ASK_TO_GIVE_ITEMS(_source, target, { type = "item_gold", amount = amount }) then
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
+			end
+
+			sourceCharacter = getCharacter(_source)
+			targetCharacter = getCharacter(target)
+			if not sourceCharacter or not targetCharacter then
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
+			end
+
+			sourceGold = sourceCharacter.gold
+			if sourceGold < amount then
+				CORE.NotifyRightTip(_source, LANG.NotEnoughGold, 3000)
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
 			sourceCharacter.removeCurrency(1, amount)
@@ -472,7 +495,6 @@ local InventoryService <const> = {
 			local info <const> = { source = _source, name = CONFIG.LOGS.webhookname, title = title, description = description, webhook = CONFIG.LOGS.webhook, color = CONFIG.LOGS.colorgiveGold, }
 			SV_UTILS.DISCORD_LOG(info)
 
-			TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
 			SV_UTILS.PROCESS.REMOVE_USER(_source)
 		end,
 
@@ -482,37 +504,37 @@ local InventoryService <const> = {
 				return CORE.NotifyRightTip(_source, LANG.cantgiveyourself, 5000)
 			end
 
-			if not USERS_WEAPONS.default[weaponId] then return end
+			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then return end
+			SV_UTILS.PROCESS.ADD_USER(_source)
+
+			if not USERS_WEAPONS.default[weaponId] then
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
+			end
 
 			local character <const> = getCharacter(_source)
-			if not character then return end
+			if not character then return SV_UTILS.PROCESS.REMOVE_USER(_source) end
 			local targetCharacter <const> = getCharacter(target)
-			if not targetCharacter then return end
+			if not targetCharacter then return SV_UTILS.PROCESS.REMOVE_USER(_source) end
 			local charid <const> = character.charIdentifier
 			local targetCharId <const> = targetCharacter.charIdentifier
 
 			if not INVENTORY_SERVICE.IS_NEW_PLAYER(_source, charid) then
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
 			if not INVENTORY_SERVICE.IS_NEW_PLAYER(target, targetCharId) then
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
-			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then return end
-			SV_UTILS.PROCESS.ADD_USER(_source)
-
 			INVENTORY_SERVICE.GIVE.WEAPON_TARGET(target, weaponId, _source)
-
-			SV_UTILS.PROCESS.REMOVE_USER(_source)
 		end,
 
 		WEAPON_TARGET = function(target, weaponId, source)
-			local weapon <const> = USERS_WEAPONS.default[weaponId]
-			if not weapon then return end
+			local weapon = USERS_WEAPONS.default[weaponId]
+			if not weapon then return SV_UTILS.PROCESS.REMOVE_USER(source) end
 
 			local targetCharacter <const> = getCharacter(target)
-			if not targetCharacter then return end
+			if not targetCharacter then return SV_UTILS.PROCESS.REMOVE_USER(source) end
 
 			local targetIdentifier <const>                 = targetCharacter.identifier
 			local targetCharId <const>                     = targetCharacter.charIdentifier
@@ -545,7 +567,7 @@ local InventoryService <const> = {
 					local sourceTotalWeaponCount = INVENTORY_API.MAIN.GET_TOTAL_WEAPONS_COUNT(targetIdentifier, targetCharId) + 1
 					if sourceTotalWeaponCount > DefaultAmount then
 						CORE.NotifyRightTip(target, LANG.cantweapons, 2000)
-						return
+						return SV_UTILS.PROCESS.REMOVE_USER(source)
 					end
 				end
 			end
@@ -561,11 +583,18 @@ local InventoryService <const> = {
 			end
 
 			if not canCarryWeapons() then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
 				return CORE.NotifyRightTip(source, LANG.cancarryWeapons, 2000)
 			end
 
 			if not INVENTORY_SERVICE.GIVE.ASK_TO_GIVE_ITEMS(source, target, { type = "item_weapon", weaponName = weaponName }) then
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(source)
+			end
+
+			weapon = USERS_WEAPONS.default[weaponId]
+			if not weapon then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return print("Player", GetPlayerName(source), "tried to give a weapon that he no longer had it possible exploit!!")
 			end
 
 			local weaponcomps <const> = weapon:getAllComponents()
@@ -595,23 +624,23 @@ local InventoryService <const> = {
 			-- notify
 			CORE.NotifyRightTip(source, LANG.youGaveWeapon, 2000)
 			CORE.NotifyRightTip(target, LANG.youReceivedWeapon, 2000)
+			SV_UTILS.PROCESS.REMOVE_USER(source)
 		end,
 
 		ITEM = function(itemId, amount, target)
 			local _source = source
-			print("a")
 			if target == _source then
 				return CORE.NotifyRightTip(_source, LANG.cantgiveyourself, 5000)
 			end
 
 			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then
-				print("sadsadsada")
 				return
 			end
+			SV_UTILS.PROCESS.ADD_USER(_source)
 
 			local character <const> = getCharacter(_source)
 			local targetCharacter <const> = getCharacter(target)
-			if not targetCharacter or not character then return end
+			if not targetCharacter or not character then return SV_UTILS.PROCESS.REMOVE_USER(_source) end
 
 			local charid <const> = character.charIdentifier
 			local targetCharId <const> = targetCharacter.charIdentifier
@@ -619,17 +648,34 @@ local InventoryService <const> = {
 			local targetInventory <const> = USERS_ITEMS.default[targetCharacter.identifier]
 
 			if not INVENTORY_SERVICE.IS_NEW_PLAYER(_source, charid) or not sourceInventory or not targetInventory or not sourceInventory[itemId] then
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
 			if not INVENTORY_SERVICE.IS_NEW_PLAYER(target, targetCharId) then
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
-
-			SV_UTILS.PROCESS.ADD_USER(_source)
 
 			local item = sourceInventory[itemId]
 			local itemName = item:getName()
+
+			local canCarryItems <const> = INVENTORY_API.MAIN.CAN_CARRY_ITEM_AMOUNT(target, amount)
+			local canCarryItem <const> = INVENTORY_API.MAIN.CAN_CARRY_ITEM(target, itemName, amount)
+			if not canCarryItems or not canCarryItem then
+				CORE.NotifyRightTip(_source, LANG.fullInventoryGive, 2000)
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
+			end
+
+			if not INVENTORY_SERVICE.GIVE.ASK_TO_GIVE_ITEMS(_source, target, { type = "item_standard", itemName = itemName, itemCount = amount }) then
+				CORE.NotifyRightTip(_source, LANG.playerRejectedRequest, 5000)
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
+			end
+
+			item = sourceInventory[itemId]
+			if not item then
+				SV_UTILS.PROCESS.REMOVE_USER(_source)
+				return print("Player", GetPlayerName(_source), "tried to give an item that he no longer had it possible exploit!!")
+			end
+
 			local itemMetadata = item:getMetadata()
 			local svItem = SERVER_ITEMS[itemName]
 			if not svItem or not item then
@@ -638,23 +684,17 @@ local InventoryService <const> = {
 
 			if item:getCount() < amount then
 				SV_UTILS.PROCESS.REMOVE_USER(_source)
-				return print("tried to give more than you have possible cheat")
+				return print("tried to give more than you have possible cheat", GetPlayerName(_source))
 			end
 
 
 			local function updateClient(addedItem)
-				TriggerClientEvent("vorpInventory:receiveItem", target,
-					itemName,
-					addedItem:getId(),
-					amount,
-					item:getMetadata(),
-					item:getDegradation(),
-					item:getPercentage(),
-					item:getDurability()
-				)
+				TriggerClientEvent("vorpInventory:receiveItem", target, itemName, addedItem:getId(), amount, item:getMetadata(), item:getDegradation(), item:getPercentage(), item:getDurability())
 				TriggerClientEvent("vorpInventory:removeItem", _source, item:getId(), amount)
+
 				local data = { name = itemName, count = amount, metadata = itemMetadata }
 				TriggerEvent("vorp_inventory:Server:OnItemRemoved", data, _source)
+
 				if item:getCount() - amount <= 0 then
 					DB_SERVICE.DELETE.ITEM(charid, item:getId())
 					sourceInventory[item:getId()] = nil
@@ -662,25 +702,12 @@ local InventoryService <const> = {
 					item:quitCount(amount)
 					DB_SERVICE.SET.ITEM_AMOUNT(charid, item:getId(), item:getCount())
 				end
+
 				local label = svItem:getMetadata()?.label or svItem:getLabel()
 				CORE.NotifyRightTip(_source, LANG.yougive .. amount .. LANG.of .. label, 2000)
 				CORE.NotifyRightTip(target, LANG.youreceive .. amount .. LANG.of .. label, 2000)
 			end
 
-			local canCarryItems <const> = INVENTORY_API.MAIN.CAN_CARRY_ITEM_AMOUNT(target, amount)
-			local canCarryItem <const> = INVENTORY_API.MAIN.CAN_CARRY_ITEM(target, itemName, amount)
-
-			if not canCarryItems or not canCarryItem then
-				CORE.NotifyRightTip(_source, LANG.fullInventoryGive, 2000)
-				SV_UTILS.PROCESS.REMOVE_USER(_source)
-				return
-			end
-
-			if not INVENTORY_SERVICE.GIVE.ASK_TO_GIVE_ITEMS(_source, target, { type = "item_standard", itemName = itemName, itemCount = amount }) then
-				SV_UTILS.PROCESS.REMOVE_USER(_source)
-				CORE.NotifyRightTip(_source, LANG.playerRejectedRequest, 5000)
-				return
-			end
 
 			local function createItem()
 				local isExpired <const> = svItem:getMaxDegradation() ~= 0 and item:getDegradation() or nil
@@ -754,63 +781,68 @@ local InventoryService <const> = {
 				return CORE.NotifyRightTip(_source, LANG.cantgiveyourself, 5000)
 			end
 
+			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then return end
+			SV_UTILS.PROCESS.ADD_USER(_source)
+
 			local sourceCharacter <const> = getCharacter(_source)
 			local targetCharacter <const> = getCharacter(target)
-			if not targetCharacter or not sourceCharacter then return end
+			if not targetCharacter or not sourceCharacter then return SV_UTILS.PROCESS.REMOVE_USER(_source) end
 
 			local sourceCharId <const> = sourceCharacter.charIdentifier
 			local targetCharId <const> = targetCharacter.charIdentifier
 
 			if not INVENTORY_SERVICE.IS_NEW_PLAYER(_source, sourceCharId) then
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 			if not INVENTORY_SERVICE.IS_NEW_PLAYER(target, targetCharId) then
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
 			if not SHARED_DATA.MAX_AMMO[ammotype] then
+				SV_UTILS.PROCESS.REMOVE_USER(_source)
 				return print("ammotype not found :", ammotype)
 			end
 
 			if maxcount ~= SHARED_DATA.MAX_AMMO[ammotype] then
+				SV_UTILS.PROCESS.REMOVE_USER(_source)
 				return -- max count was modified in client side
 			end
 
 			-- check if ammount is allowed
 			if amount > SHARED_DATA.MAX_AMMO[ammotype] then
+				SV_UTILS.PROCESS.REMOVE_USER(_source)
 				return CORE.NotifyRightTip(_source, LANG.amountGreaterThanMaxAllowed, 2000)
 			end
 
 			local userAmmoData <const> = USERS_AMMO_DATA[_source]
 			local targetAmmoData <const> = USERS_AMMO_DATA[target]
-			if not userAmmoData or not targetAmmoData then return end
+			if not userAmmoData or not targetAmmoData then return SV_UTILS.PROCESS.REMOVE_USER(_source) end
 
 			local player1ammo <const> = userAmmoData.ammo[ammotype]
 			if not player1ammo then
-				TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
+				SV_UTILS.PROCESS.REMOVE_USER(_source)
 				return CORE.NotifyRightTip(_source, LANG.noAmmoOfThisType .. ammotype, 2000)
 			end
 
-			local player2ammo <const> = targetAmmoData.ammo[ammotype]
+			local player2ammo = targetAmmoData.ammo[ammotype]
 
 			if not player2ammo then
 				USERS_AMMO_DATA[target].ammo[ammotype] = 0
+				player2ammo = 0
 			end
 
 			if amount > player1ammo then
 				CORE.NotifyRightTip(_source, LANG.notenoughammo, 2000)
-				TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
 			if (player2ammo + amount) > SHARED_DATA.MAX_AMMO[ammotype] then
 				CORE.NotifyRightTip(_source, LANG.fullammoyou, 2000)
-				TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
 			if not INVENTORY_SERVICE.GIVE.ASK_TO_GIVE_ITEMS(source, target, { type = "item_ammo", ammotype = ammotype, amount = amount }) then
-				return
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
 			end
 
 			userAmmoData.ammo[ammotype] = math.max(0, player1ammo - amount)
@@ -824,11 +856,12 @@ local InventoryService <const> = {
 			DB_SERVICE.ASYNC.UPDATE(query, params)
 			DB_SERVICE.ASYNC.UPDATE(query, params2)
 
-			TriggerClientEvent("vorp_inventory:ProcessingReady", _source)
+
 			local setAmmoToPed = true
 			local isSource = true
 			TriggerClientEvent("vorpinventory:recammo", _source, userAmmoData, setAmmoToPed, isSource)
 			TriggerClientEvent("vorpinventory:recammo", target, targetAmmoData, setAmmoToPed)
+			SV_UTILS.PROCESS.REMOVE_USER(_source)
 		end,
 
 	},
@@ -836,15 +869,17 @@ local InventoryService <const> = {
 	PICKUP = {
 		ITEM = function(data)
 			local _source <const> = source
+
 			local pickup <const> = PICKUPS.ITEMS[data.uid]
 			if not pickup then return print("Pickup not found") end
 
 			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then
-				return print("In processing")
+				return
 			end
+			SV_UTILS.PROCESS.ADD_USER(_source)
 
 			local character <const> = getCharacter(_source)
-			if not character then return print("Character not found") end
+			if not character then return SV_UTILS.PROCESS.REMOVE_USER(_source) end
 
 			local identifier = character.identifier
 			local charId <const> = character.charIdentifier
@@ -852,15 +887,13 @@ local InventoryService <const> = {
 			local job <const> = character.job
 
 
-			SV_UTILS.PROCESS.ADD_USER(_source)
 			if pickup.isItem == 1 then
 				local canCarryWeight <const> = INVENTORY_API.MAIN.CAN_CARRY_ITEM_AMOUNT(_source, pickup.amount)
 				local canCarryLimit <const> = INVENTORY_API.MAIN.CAN_CARRY_ITEM(_source, pickup.name, pickup.amount)
 
 				if not canCarryWeight or not canCarryLimit then
 					CORE.NotifyRightTip(_source, LANG.fullInventory, 2000)
-					SV_UTILS.PROCESS.REMOVE_USER(_source)
-					return
+					return SV_UTILS.PROCESS.REMOVE_USER(_source)
 				end
 
 				local info = { degradation = pickup.degradation, isPickup = true, durability = pickup.durability }
@@ -901,7 +934,6 @@ local InventoryService <const> = {
 
 				local weapon <const> = USERS_WEAPONS.default[weaponId]
 				if not weapon then
-					print("Weapon not found")
 					return SV_UTILS.PROCESS.REMOVE_USER(_source)
 				end
 
@@ -965,18 +997,18 @@ local InventoryService <const> = {
 		MONEY = function(data)
 			local _source = source
 
-			local money <const> = PICKUPS.MONEY[data.uuid]
-			if not money then
-				return
-			end
-
-			local character <const> = getCharacter(_source)
-			if not character then return end
-
 			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then
 				return
 			end
 			SV_UTILS.PROCESS.ADD_USER(_source)
+
+			local money <const> = PICKUPS.MONEY[data.uuid]
+			if not money then
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
+			end
+
+			local character <const> = getCharacter(_source)
+			if not character then return SV_UTILS.PROCESS.REMOVE_USER(_source) end
 
 			local charname          = character.firstname .. ' ' .. character.lastname
 			local steamname <const> = GetPlayerName(_source) or ""
@@ -1037,18 +1069,20 @@ local InventoryService <const> = {
 
 		GOLD = function(data)
 			local _source = source
-			local picup <const> = PICKUPS.GOLD[data.uuid]
-			if not picup then
-				return
-			end
-
-			local character <const> = getCharacter(_source)
-			if not character then return end
-
 			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then
 				return
 			end
 			SV_UTILS.PROCESS.ADD_USER(_source)
+
+			local picup <const> = PICKUPS.GOLD[data.uuid]
+			if not picup then
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
+			end
+
+			local character <const> = getCharacter(_source)
+			if not character then return SV_UTILS.PROCESS.REMOVE_USER(_source) end
+
+
 
 			TriggerClientEvent("vorpInventory:shareGoldPickupClient", -1, data.obj, nil, nil, nil, 2)
 			TriggerClientEvent("vorpInventory:playerAnim", _source, data.obj)
@@ -1073,18 +1107,18 @@ local InventoryService <const> = {
 		ROLL = function(data)
 			local _source = source
 
-			local roll <const> = PICKUPS.ROLL[data.uuid]
-			if not roll then
-				return
-			end
-
-			local character <const> = getCharacter(_source)
-			if not character then return end
-
 			if SV_UTILS.PROCESS.USER_IN_PROCESSING(_source) then
 				return
 			end
 			SV_UTILS.PROCESS.ADD_USER(_source)
+
+			local roll <const> = PICKUPS.ROLL[data.uuid]
+			if not roll then
+				return SV_UTILS.PROCESS.REMOVE_USER(_source)
+			end
+
+			local character <const> = getCharacter(_source)
+			if not character then return SV_UTILS.PROCESS.REMOVE_USER(_source) end
 
 			TriggerClientEvent("vorpInventory:shareRollPickupClient", -1, data.obj, nil, nil, nil, 2)
 			TriggerClientEvent("vorpInventory:playerAnim", _source, data.obj)
@@ -1113,10 +1147,16 @@ local InventoryService <const> = {
 
 		WEAPON = function(source, weaponId)
 			local userWeapon <const> = USERS_WEAPONS.default[weaponId]
-			if not userWeapon then return end
+			if not userWeapon then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return
+			end
 
 			local sourceCharacter <const> = getCharacter(source)
-			if not sourceCharacter then return end
+			if not sourceCharacter then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return
+			end
 
 			local charId <const> = sourceCharacter.charIdentifier
 			local params <const> = { charId = charId, id = weaponId, }
@@ -1127,21 +1167,32 @@ local InventoryService <const> = {
 		end,
 
 		SHARE_WEAPON = function(source, callback, data)
+			if SV_UTILS.PROCESS.USER_IN_PROCESSING(source) then
+				return callback(false)
+			end
+			SV_UTILS.PROCESS.ADD_USER(source)
+
 			if data.isItem == 1 then -- 1 is item 0 is weapon
+				SV_UTILS.PROCESS.REMOVE_USER(source)
 				return callback(false)
 			end
 
 			local weapon <const> = USERS_WEAPONS.default[data.id]
 			if not weapon then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
 				return callback(false)
 			end
 
 			if CONFIG.PICKUPS.DELETE_ON_DROP then
 				INVENTORY_API.MAIN.DELETE_WEAPON(source, data.id)
+				SV_UTILS.PROCESS.REMOVE_USER(source)
 				return callback(true)
 			else
 				local result <const> = INVENTORY_SERVICE.DROP.WEAPON(source, data.id)
-				if not result then return callback(false) end
+				if not result then
+					SV_UTILS.PROCESS.REMOVE_USER(source)
+					return callback(false)
+				end
 			end
 
 			local serialNumber = weapon:getSerialNumber()
@@ -1166,27 +1217,54 @@ local InventoryService <const> = {
 
 			data.type = "item_weapon"
 			shareData(data)
+			SV_UTILS.PROCESS.REMOVE_USER(source)
 			return callback(true)
 		end,
 
 		SHARE_ITEM = function(source, callback, data)
+			if SV_UTILS.PROCESS.USER_IN_PROCESSING(source) then
+				return callback(false)
+			end
+			SV_UTILS.PROCESS.ADD_USER(source)
+
 			local character <const> = getCharacter(source)
-			if not character then return callback(false) end
+			if not character then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(false)
+			end
 
 			local sourceInventory <const> = USERS_ITEMS.default[character.identifier]
-			if not sourceInventory then return callback(false) end
+			if not sourceInventory then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(false)
+			end
 
 			local item <const> = sourceInventory[data.id]
-			if not item then return callback(false) end
+			if not item then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(false)
+			end
 
-			if data.isItem == 0 then return callback(false) end
+			if data.isItem == 0 then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(false)
+			end
 
-			if data.amount > item:getCount() then return callback(false) end
+			if data.amount > item:getCount() then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(false)
+			end
 
 			local result <const> = INVENTORY_SERVICE.ITEM.REMOVE(source, "default", data.id, data.amount)
-			if not result then return callback(false) end
+			if not result then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(false)
+			end
 
-			if CONFIG.PICKUPS.DELETE_ON_DROP then return callback(true) end
+			if CONFIG.PICKUPS.DELETE_ON_DROP then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(true)
+			end
 
 			local charname <const> = character.firstname .. ' ' .. character.lastname
 			local steamname <const> = GetPlayerName(source) or ""
@@ -1205,14 +1283,24 @@ local InventoryService <const> = {
 			data.degradation = item:getDegradation()
 			data.durability = item:getDurability()
 			shareData(data)
+			SV_UTILS.PROCESS.REMOVE_USER(source)
 			return callback(true)
 		end,
 
 		SHARE_MONEY = function(source, callback, data)
+			if SV_UTILS.PROCESS.USER_IN_PROCESSING(source) then
+				return callback(false)
+			end
+			SV_UTILS.PROCESS.ADD_USER(source)
+
 			local character <const> = getCharacter(source)
-			if not character then return callback(false) end
+			if not character then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(false)
+			end
 
 			if data.amount > character.money then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
 				return callback(false)
 			end
 
@@ -1229,6 +1317,7 @@ local InventoryService <const> = {
 			}
 
 			if not CONFIG.PICKUPS.USE_TIMER then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
 				return callback(true)
 			end
 
@@ -1238,7 +1327,7 @@ local InventoryService <const> = {
 					PICKUPS.MONEY[uid] = nil
 				end
 			end)
-
+			SV_UTILS.PROCESS.REMOVE_USER(source)
 			return callback(true)
 		end,
 
@@ -1281,10 +1370,19 @@ local InventoryService <const> = {
 		end,
 
 		SHARE_GOLD = function(source, callback, data)
+			if SV_UTILS.PROCESS.USER_IN_PROCESSING(source) then
+				return callback(false)
+			end
+			SV_UTILS.PROCESS.ADD_USER(source)
+
 			local character <const> = getCharacter(source)
-			if not character then return callback(false) end
+			if not character then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(false)
+			end
 
 			if data.amount > character.gold then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
 				return callback(false)
 			end
 
@@ -1302,6 +1400,7 @@ local InventoryService <const> = {
 			}
 
 			if not CONFIG.PICKUPS.USE_TIMER then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
 				return callback(true)
 			end
 
@@ -1311,14 +1410,24 @@ local InventoryService <const> = {
 					PICKUPS.GOLD[uid] = nil
 				end
 			end)
+			SV_UTILS.PROCESS.REMOVE_USER(source)
 			return callback(true)
 		end,
 
 		SHARE_ROLL = function(source, callback, data)
+			if SV_UTILS.PROCESS.USER_IN_PROCESSING(source) then
+				return callback(false)
+			end
+			SV_UTILS.PROCESS.ADD_USER(source)
+
 			local character <const> = getCharacter(source)
-			if not character then return callback(false) end
+			if not character then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(false)
+			end
 
 			if data.amount > character.rol then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
 				return callback(false)
 			end
 
@@ -1336,6 +1445,7 @@ local InventoryService <const> = {
 			}
 
 			if not CONFIG.PICKUPS.USE_TIMER then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
 				return callback(true)
 			end
 
@@ -1345,6 +1455,7 @@ local InventoryService <const> = {
 					PICKUPS.ROLL[uid] = nil
 				end
 			end)
+			SV_UTILS.PROCESS.REMOVE_USER(source)
 			return callback(true)
 		end,
 
@@ -1873,7 +1984,28 @@ local InventoryService <const> = {
 					return print("amount is greater than what we have :", amount, "we have :", userAmmoData.ammo[ammoType], "ammo type :", ammoType, "possible cheat!!", GetPlayerName(_source))
 				end
 
+				if amount <= 0 then
+					userAmmoData.ammo[ammoType] = nil
+				end
+
 				userAmmoData.ammo[ammoType] = math.min(amount, SHARED_DATA.MAX_AMMO_BELT[ammoType])
+			end
+		end,
+
+		SAVE = function(source)
+			local userAmmoData <const> = USERS_AMMO_DATA[source]
+			if not userAmmoData then return end
+
+			local charId <const> = userAmmoData.charidentifier
+			local encodedAmmo <const> = json.encode(userAmmoData.ammo)
+
+			if LAST_SAVED_AMMO_DATA[charId] ~= encodedAmmo then
+				LAST_SAVED_AMMO_DATA[charId] = encodedAmmo
+
+				DB_SERVICE.ASYNC.UPDATE("UPDATE characters SET ammo=@ammo WHERE charidentifier=@charidentifier", {
+					charidentifier = charId,
+					ammo = encodedAmmo,
+				})
 			end
 		end,
 
@@ -2132,8 +2264,8 @@ local InventoryService <const> = {
 
 		if not isdead then return end
 
-		local function removeCurrency(currencyType, currencyAmount, percentage, list)
-			if not SHARED_UTILS.IS_VALUE_IN_ARRAY(job, list) then
+		local function removeCurrency(currencyType, currencyAmount, percentage, jobLock)
+			if not jobLock[job] then
 				if percentage == 1.0 then
 					character.removeCurrency(currencyType, currencyAmount)
 				else
@@ -2143,6 +2275,7 @@ local InventoryService <const> = {
 		end
 
 		local value <const> = CONFIG.PLAYER_RESPAWN
+
 		if value.MONEY.ENABLE then
 			removeCurrency(0, character.money, value.MONEY.PERCENTAGE, value.MONEY.JOB_LOCK)
 		end
@@ -2162,17 +2295,19 @@ local InventoryService <const> = {
 			removeCurrency(1, character.gold, value.GOLD.PERCENTAGE, value.GOLD.JOB_LOCK)
 		end
 
+		if value.ROLL.ENABLE then
+			removeCurrency(2, character.rol, value.ROLL.PERCENTAGE, value.ROLL.JOB_LOCK)
+		end
+
 		if value.ITEMS.ENABLE then
-			if not SHARED_UTILS.IS_VALUE_IN_ARRAY(job, value.ITEMS.JOB_LOCK) then
+			if not value.ITEMS.JOB_LOCK[job] then
 				if value.ITEMS.ALL then
 					INVENTORY_API.MAIN.REMOVE_ALL_ITEMS(_source)
 				else
-					INVENTORY_API.MAIN.GET_INVENTORY(_source, function(Userinventory)
-						for _, itemData in ipairs(Userinventory) do
-							for _, itemName in ipairs(value.ITEMS.WHITELIST) do
-								if itemData.name ~= itemName then
-									INVENTORY_API.MAIN.SUB_ITEM_BY_ID(_source, itemData.id)
-								end
+					INVENTORY_API.MAIN.GET_INVENTORY(_source, function(userInventory)
+						for _, itemData in ipairs(userInventory) do
+							if not value.ITEMS.WHITELIST[itemData.name] then
+								INVENTORY_API.MAIN.SUB_ITEM_BY_ID(_source, itemData.id)
 							end
 						end
 					end)
@@ -2181,17 +2316,15 @@ local InventoryService <const> = {
 		end
 
 		if value.WEAPONS.ENABLE then
-			if not SHARED_UTILS.IS_VALUE_IN_ARRAY(job, value.WEAPONS.JOB_LOCK) then
+			if not value.WEAPONS.JOB_LOCK[job] then
 				if value.WEAPONS.ALL then
 					INVENTORY_API.MAIN.REMOVE_ALL_WEAPONS(_source)
 				else
-					INVENTORY_API.MAIN.GET_WEAPONS(_source, function(Userweapons)
-						for _, weaponData in ipairs(Userweapons) do
-							for _, v in ipairs(value.WEAPONS.WHITELIST) do
-								if v ~= weaponData.name then
-									INVENTORY_API.MAIN.REMOVE_WEAPON(_source, weaponData.id)
-									INVENTORY_API.MAIN.DELETE_WEAPON(_source, weaponData.id)
-								end
+					INVENTORY_API.MAIN.GET_WEAPONS(_source, function(userWeapons)
+						for _, weaponData in ipairs(userWeapons) do
+							if not value.WEAPONS.WHITELIST[weaponData.name] then
+								INVENTORY_API.MAIN.REMOVE_WEAPON(_source, weaponData.id)
+								INVENTORY_API.MAIN.DELETE_WEAPON(_source, weaponData.id)
 							end
 						end
 					end)
@@ -2200,12 +2333,13 @@ local InventoryService <const> = {
 		end
 
 		if value.AMMO.ENABLE then
-			if not SHARED_UTILS.IS_VALUE_IN_ARRAY(job, value.AMMO.JOB_LOCK) then
+			if not value.AMMO.JOB_LOCK[job] then
 				TriggerClientEvent('syn_weapons:removeallammo', _source) -- syn script
 				INVENTORY_API.MAIN.CLEAR_GUNBELT_AMMO(_source)
 			end
 		end
 	end,
+
 	-- needs a list so we only allow throwables
 	DROP_THROWABLE_WEAPON = function(weaponId, weaponName)
 		local _source <const> = source
@@ -3254,6 +3388,7 @@ local InventoryService <const> = {
 			local needed <const> = recipe.NEEDED
 			local reward <const> = recipe.REWARD
 			local idsToRemove <const> = {}
+			local found <const> = {}
 
 			for itemId, itemData in pairs(userInventory) do
 				local itemName <const> = itemData:getName()
@@ -3261,6 +3396,7 @@ local InventoryService <const> = {
 				local itemNeeded <const> = needed[itemName]
 
 				if itemNeeded and itemAmount >= itemNeeded then
+					found[itemName] = true
 					table.insert(idsToRemove, itemId)
 				end
 			end
@@ -3269,6 +3405,11 @@ local InventoryService <const> = {
 				return cb(false)
 			end
 
+			for itemName in pairs(needed) do
+				if not found[itemName] then
+					return cb(false)
+				end
+			end
 
 			local itemName <const> = next(reward)
 			local amount <const> = reward[itemName]
@@ -3316,18 +3457,8 @@ CreateThread(function()
 
 	LIB.SetInterval(function()
 		local function updateAmmo()
-			for _, value in pairs(USERS_AMMO_DATA) do
-				local charId <const> = value.charidentifier
-				local encodedAmmo <const> = json.encode(value.ammo)
-
-				if LAST_SAVED_AMMO_DATA[charId] ~= encodedAmmo then
-					LAST_SAVED_AMMO_DATA[charId] = encodedAmmo
-
-					local query <const> = "UPDATE characters SET ammo=@ammo WHERE charidentifier=@charidentifier"
-					local params <const> = { charidentifier = charId, ammo = encodedAmmo }
-
-					DB_SERVICE.ASYNC.UPDATE(query, params)
-				end
+			for source in pairs(USERS_AMMO_DATA) do
+				InventoryService.AMMO.SAVE(source)
 			end
 		end
 

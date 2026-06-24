@@ -748,7 +748,7 @@ body {
 
 .mainButtonContainer {
     display: flex;
-    left: 24.5vw;
+    right: 11.5vw;
     position: absolute;
     top: 10vh;
     z-index: 500;
@@ -756,9 +756,8 @@ body {
 }
 
 #inventoryHud .mainButtonContainer {
-    align-items: flex-start;
+    align-items: center;
     gap: 0.25vw;
-    padding-left: 3.5vw;
 }
 
 #inventoryHud .mainButtonContainer>.mainButton-close,
@@ -928,15 +927,22 @@ body {
     min-width: 6vw;
 }
 
+.mainButton-toolbar-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.1vw;
+    position: relative;
+}
 
 #inventoryHud .mainButtonContainer .mainButton-close,
 .mainButton.mainButton-close {
-    max-height: 4.5vh;
+    max-height: 2.4vh;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     gap: 0;
-    min-height: 0;
+    min-height: 2.4vh;
     min-width: 1.5vw;
     padding: 0 0.1vw 0.1vh;
     background: none;
@@ -945,6 +951,7 @@ body {
     display: inline-flex;
     float: none;
     color: #ffffff;
+    flex-shrink: 0;
 }
 
 #inventoryHud .mainButtonContainer .mainButton-close:hover .mainButton-close__label {
@@ -1220,11 +1227,13 @@ input#secondarysearch:-ms-input-placeholder {
 
 .item .count {
     position: absolute;
-    left: 3.6vw;
-    top: 5.3vh;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    top: auto;
     z-index: 2;
     text-align: center;
-    font-size: 0.9vw;
+    font-size: 0.7vw;
     width: 2.2vw;
     height: 3.5vh;
     color: black;
@@ -1234,7 +1243,11 @@ input#secondarysearch:-ms-input-placeholder {
     background-position: center;
     background-size: 100% 100%;
     pointer-events: none;
-    line-height: 50px;
+    display: flex;
+    align-items: center;
+    padding-top: 3px;
+    justify-content: center;
+    line-height: 1;
 }
 
 .item .weapon-ammo-count {
@@ -1941,19 +1954,19 @@ input#secondarysearch:-ms-input-placeholder {
     margin-top: 0;
 }
 
-
 .mainButton.mainButton-craft,
 .mainButton.mainButton-saddle,
-.mainButton.mainButton-attachments {
+.mainButton.mainButton-attachments,
+.mainButton.mainButton-sort {
     margin-left: 0;
-    max-height: 4.5vh;
+    max-height: 2.4vh;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     gap: 0;
-    min-height: 0;
-    min-width: 1.5vw;
-    padding: 0 0.1vw 0.1vh;
+    min-height: 2.4vh;
+    min-width: 1.2vw;
+    padding: 0 0 0.1vh;
     background: none;
     border: none;
     box-sizing: border-box;
@@ -1978,13 +1991,32 @@ input#secondarysearch:-ms-input-placeholder {
     pointer-events: none;
 }
 
+#sortConfirmPopup {
+    background-color: rgba(10, 8, 5, 0.95);
+    background-image: var(--inventory-image);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% 100%;
+    border: 1px solid rgba(245, 240, 230, 0.15);
+}
+
+#sortConfirmYes:hover,
+#sortConfirmNo:hover {
+    border-color: red !important;
+    color: #ffffff;
+    transform: none;
+}
 
 .mainButton-craft__icon,
 .mainButton-saddle__icon,
-.mainButton-attachments__icon {
-    display: block;
+.mainButton-attachments__icon,
+.mainButton-sort__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4vw;
     width: 1.5vw;
-    height: 2.5vh;
+    height: 2.4vh;
     flex-shrink: 0;
     background-color: transparent;
     background-repeat: no-repeat;
@@ -2005,10 +2037,15 @@ input#secondarysearch:-ms-input-placeholder {
     background-image: var(--attachments-toolbar-image);
 }
 
+.mainButton-sort__icon::before {
+    content: "⇅";
+}
+
 .mainButton-close__label,
 .mainButton-craft__label,
 .mainButton-saddle__label,
-.mainButton-attachments__label {
+.mainButton-attachments__label,
+.mainButton-sort__label {
     font-family: "crock", serif;
     font-size: 0.0vw;
     line-height: 1;

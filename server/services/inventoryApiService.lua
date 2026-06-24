@@ -993,7 +993,8 @@ local InventoryAPI = {
 			end
 
 			USERS_AMMO_DATA[_source].ammo = ammo
-			TriggerClientEvent("vorpinventory:recammo", _source, USERS_AMMO_DATA[_source])
+
+			TriggerClientEvent("vorpinventory:recammo", _source, USERS_AMMO_DATA[_source], not CONFIG.MANUAL_WEAPON_RELOAD)
 
 			local query1 = 'UPDATE characters SET ammo = @ammo WHERE charidentifier = @charidentifier'
 			local params1 <const> = { charidentifier = charidentifier, ammo = json.encode(ammo) }
@@ -1091,7 +1092,7 @@ local InventoryAPI = {
 			local userWeapons <const> = USERS_WEAPONS.default[weaponId]
 			if not userWeapons then return respond(cb, false) end
 
-			for component, category in pairs(components) do
+			for category, component in pairs(components) do
 				userWeapons:addComponent(component, category) -- updates database
 			end
 
@@ -1115,7 +1116,7 @@ local InventoryAPI = {
 			local userWeapons <const> = USERS_WEAPONS.default[weaponId]
 			if not userWeapons then return respond(cb, false) end
 
-			for component, category in pairs(components) do
+			for category, component in pairs(components) do
 				userWeapons:removeComponent(component, category)
 			end
 			TriggerClientEvent("vorp_inventory:subComponents", _source, weaponId, components)

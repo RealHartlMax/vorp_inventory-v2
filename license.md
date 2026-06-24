@@ -1,5 +1,5 @@
 VORP CORE CUSTOM SOURCE-AVAILABLE LICENSE
-Version 1.2
+Version 1.3
 
 Copyright (c) 2024-present outsider31000
 All rights reserved.
@@ -9,7 +9,9 @@ All rights reserved.
 1. Definitions
 
 "Software" means all source code, scripts, files, configurations, assets, updates, and other
-materials contained in this repository or otherwise distributed by the Licensor under this license.
+materials contained in this repository or otherwise distributed by the Licensor under this
+license, limited to original contributions authored by the Licensor and all code present in
+this repository from its creation date onwards.
 
 "Licensor" means the copyright owner of the Software.
 
@@ -35,7 +37,29 @@ of whether the original author considers it substantial.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-2. Limited License Grant
+2. Scope and Prior Versions
+
+This license applies exclusively to:
+
+  a. all original code and materials authored by outsider31000 and contained in this
+     repository (vorp_inventory-v2);
+
+  b. all Contributions submitted to this repository after its creation date, subject to
+     Section 6.
+
+This license does not apply to, and does not modify or restrict the terms of, any prior
+versions of vorp_inventory or any code previously released under the GNU General Public
+License v2.0 (GPL v2) or any other open source license in any prior repository. Such
+prior releases remain governed solely by their original license terms and are unaffected
+by this license.
+
+For the avoidance of doubt, nothing in this license shall be construed as retroactively
+restricting, modifying, or superseding any rights already granted to any person under the
+GPL v2 or any other license applied to prior versions of this software.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. Limited License Grant
 
 Subject to full compliance with this license, the Licensor grants you a limited, non-exclusive,
 non-transferable, revocable license to:
@@ -51,7 +75,7 @@ non-transferable, revocable license to:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-3. Restrictions
+4. Restrictions
 
 You may not, without prior written permission from the Licensor:
 
@@ -80,7 +104,7 @@ You may not, without prior written permission from the Licensor:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-4. Private Modifications
+5. Private Modifications
 
 You may modify the Software only for your own private internal use on a server or project you
 directly own and control, provided that:
@@ -99,7 +123,7 @@ or commercialize the modified Software itself.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-5. API Use Clarification
+6. API Use Clarification
 
 Use of the API by an Independent Work does not, by itself, give you any ownership rights in the
 Software. An Independent Work that merely communicates with the Software through the API, and
@@ -108,7 +132,7 @@ for commercial use.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-6. Contributions
+7. Contributions
 
 By submitting any Contribution to the Software, whether by pull request, patch, direct message,
 uploaded file, suggestion that is implemented, or by any other means, you agree that:
@@ -135,7 +159,7 @@ of the Software.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-7. Ownership and Patents
+8. Ownership and Patents
 
 The Software is licensed, not sold. The Licensor retains all right, title, and interest in and
 to the Software, including all copyright, trademark, trade secret, and other intellectual
@@ -147,7 +171,7 @@ by implication, estoppel, or otherwise.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-8. Termination
+9. Termination
 
 This license automatically terminates if you violate any term of it. However, if you cure the
 violation within thirty (30) days of becoming aware of it (or being notified of it in writing
@@ -155,12 +179,12 @@ by the Licensor), and the violation was unintentional, your license may be reins
 Licensor's sole discretion.
 
 Upon termination, you must immediately stop using the Software and delete all copies of the
-Software and any modified private copies in your possession or control. Sections 6, 7, 9, 10,
-11, and 12 survive termination.
+Software and any modified private copies in your possession or control. Sections 7, 8, 10, 11,
+12, and 13 survive termination.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-9. Governing Law and Jurisdiction
+10. Governing Law and Jurisdiction
 
 This license shall be governed by and construed in accordance with the laws of
 [`England`], without regard to its
@@ -169,7 +193,7 @@ exclusive jurisdiction of the courts located in [`England`].
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-10. No Warranty
+11. No Warranty
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
 BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND
@@ -178,7 +202,7 @@ UNINTERRUPTED, OR FREE OF SECURITY VULNERABILITIES.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-11. Limitation of Liability
+12. Limitation of Liability
 
 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSOR SHALL NOT BE LIABLE FOR ANY
 DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING BUT NOT
@@ -189,7 +213,7 @@ HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-12. Acceptance
+13. Acceptance
 
 By using, copying, accessing, possessing, or contributing to the Software, you agree to be
 bound by this license. If you do not agree to these terms, you must not access, use, or

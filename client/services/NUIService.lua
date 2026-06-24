@@ -20,60 +20,17 @@ AddEventHandler('inv:givestatus', function(value)
 	CAN_USE_GIVE = value
 end)
 
-local function getGuidFromItemId(inventoryId, itemData, category, slotId)
-	local outItem = DataView.ArrayBuffer(8 * 13)
 
-	if not itemData then
-		itemData = 0
-	end
-	--InventoryGetGuidFromItemid
-	local success = Citizen.InvokeNative(0x886DFD3E185C8A89, inventoryId, itemData, category, slotId, outItem:Buffer())
-	if success then
-		return outItem:Buffer() --Seems to not return anythign diff. May need to pull from native above
-	else
-		return nil
-	end
+local function isDualWielding()
+	-- IF EXISTS IN RIGHT HOLSTER OR IN HAND THEN WE WANT TO ADD DUAL
+	local _, weapon = GetCurrentPedWeapon(CACHE.Ped, false, 0, true) -- in right hand
+	local _, weapon2 = GetCurrentPedWeapon(CACHE.Ped, true, 2, true) -- in right holster
+
+	return weapon ~= `WEAPON_UNARMED` or not (weapon2 ~= `WEAPON_UNARMED` or weapon2 ~= 0)
 end
-
-local function addWardrobeInventoryItem(itemName, slotHash)
-	local itemHash    = joaat(itemName)
-	local addReason   = joaat("ADD_REASON_DEFAULT")
-	local inventoryId = 1
-
-	-- _ITEMDATABASE_IS_KEY_VALID
-	local isValid     = Citizen.InvokeNative(0x6D5D51B188333FD1, itemHash, 0) --ItemdatabaseIsKeyValid
-	if not isValid then
-		return false
-	end
-
-	local characterItem = getGuidFromItemId(inventoryId, nil, joaat("CHARACTER"), 0xA1212100)
-	if not characterItem then
-		return false
-	end
-
-	local wardrobeItem = getGuidFromItemId(inventoryId, characterItem, joaat("WARDROBE"), 0x3DABBFA7)
-	if not wardrobeItem then
-		return false
-	end
-
-	local itemData = DataView.ArrayBuffer(8 * 13)
-
-	-- _INVENTORY_ADD_ITEM_WITH_GUID
-	local isAdded = Citizen.InvokeNative(0xCB5D11F9508A928D, inventoryId, itemData:Buffer(), wardrobeItem, itemHash, slotHash, 1, addReason)
-	if not isAdded then
-		return false
-	end
-
-	-- _INVENTORY_EQUIP_ITEM_WITH_GUID
-	local equipped = Citizen.InvokeNative(0x734311E2852760D0, inventoryId, itemData:Buffer(), true)
-	return equipped;
-end
-
-
 
 local function useWeapon(data)
 	data.type = data.type or "item_weapon"
-	local ped = CACHE.Ped
 	local weaponId = tonumber(data.id)
 	local weapon <const> = PLAYER_INVENTORY.WEAPONS[weaponId]
 	if not weapon then
@@ -93,20 +50,29 @@ local function useWeapon(data)
 	end
 
 	local weapName = joaat(weapon:getName())
-	local isWeaponAGun = Citizen.InvokeNative(0x705BE297EEBDB95D, weapName)
-	local isWeaponOneHanded = Citizen.InvokeNative(0xD955FEE4B87AFA07, weapName)
-	local isArmed = IsPedArmed(ped, 4) == 1
 	local isThrowable = IsWeaponThrowable(weapon:getName()) == 1
 	local isMelee = IsWeaponMeleeWeapon(weapon:getName()) == 1
+	local isDualWeapon = isDualWielding()
+	local isOneHanded = IsWeaponOneHanded(joaat(weapon:getName())) == 1
 
-	if (isWeaponAGun and isWeaponOneHanded) and isArmed and CONFIG.DUAL_WIELD then
-		addWardrobeInventoryItem("CLOTHING_ITEM_M_OFFHAND_000_TINT_004", 0xF20B6B4A)
-		addWardrobeInventoryItem("UPGRADE_OFFHAND_HOLSTER", 0x39E57B01)
+	if isDualWeapon and CONFIG.DUAL_WIELD and isOneHanded then
+		if CONFIG.DUAL_WIELD_HOLSTER_NEEDED then
+			-- PLAYER NEEDS TO HAVE THE HOLSTER IN THE LEFT HAND TO DUAL WIELD
+			local hasLeftHolster = INVENTORY_SERVICE.HAS_LEFT_HOLSTER()
+			if not hasLeftHolster then
+				CORE.NotifyRightTip("You need to have a left holster to dual wield", 5000)
+				return
+			end
+		end
 
+		AddWardrobeInventoryItem("CLOTHING_ITEM_M_OFFHAND_000_TINT_004", 0xF20B6B4A)
+		AddWardrobeInventoryItem("UPGRADE_OFFHAND_HOLSTER", 0x39E57B01)
+
+		weapon:setUsed2(true, true)
+		weapon:setUsed(true, true)
 		weapon:equipwep()
 		weapon:loadComponents()
-		weapon:setUsed(true, true)
-		weapon:setUsed2(true, true)
+
 		SetTimeout(1000, function()
 			weapon:setStatus()
 		end)
@@ -115,6 +81,8 @@ local function useWeapon(data)
 		local isDual = true
 		TriggerEvent("vorp_inventory:onWeaponEquipped", weapon:getAllComponents(), weaponId, weapon:getName(), isDual, weapon.defaultAttachments)
 	else
+		weapon:setUsed2(false, true)
+		weapon:setUsed(true, true)
 		weapon:equipwep()
 		if not isThrowable and not isMelee then
 			weapon:loadComponents()
@@ -123,8 +91,6 @@ local function useWeapon(data)
 				weapon:setStatus()
 			end)
 		end
-
-		weapon:setUsed(true, true)
 
 		TriggerServerEvent("syn_weapons:weaponused", data)
 		local isDual = false
@@ -138,7 +104,7 @@ local function useWeapon(data)
 		LocalPlayer.state:set(key, info, true)
 	end
 	TriggerServerEvent("vorpinventory:setUsedWeapon", weaponId, weapon:getUsed(), weapon:getUsed2())
-
+	print("weapon")
 	NUI_SERVICE.WEAPON.UPDATE_ICON(weapon:getId())
 end
 
@@ -378,6 +344,7 @@ local nuiService = {
 			IS_INV_OPEN = true
 			NUI_SERVICE.INVENTORY.GET_LOAD()
 		end,
+
 		RELOAD = function(inventory, packed)
 			local payload = {}
 			if packed then
@@ -514,6 +481,7 @@ local nuiService = {
 
 		PROCESSING_PAYMENT = function()
 			IS_PROCESSING_PAYMENT = false
+			INVENTORY_DISABLED = false
 		end,
 
 		SAVE_LAYOUT = function(data, cb)
@@ -713,9 +681,10 @@ local nuiService = {
 
 		GIVE = function(obj)
 			NUI_SERVICE.INVENTORY.CLOSE()
-			if not CAN_USE_GIVE then
+			if not CAN_USE_GIVE or INVENTORY_DISABLED then
 				return CORE.NotifyRightTip(LANG.cantgivehere, 5000)
 			end
+			INVENTORY_DISABLED = true
 
 			local result <const> = exports.vorp_lib:Select({
 				allow_self = false,
@@ -726,17 +695,20 @@ local nuiService = {
 			})
 
 			if not result then
+				INVENTORY_DISABLED = false
 				return CORE.NotifyRightTip(LANG.noPlayersFound, 5000)
 			end
 
 			local target = result
 			if target == GetPlayerServerId(CACHE.Player) then
+				INVENTORY_DISABLED = false
 				return CORE.NotifyRightTip(LANG.cantgiveyourself, 5000)
 			end
 
 			local data = obj
 			local data2 = data.data
 			local isvalid = Validator.IsValidNuiCallback(data.hsn)
+			--close inventory
 
 			if isvalid then
 				local itemId = data2.id
@@ -744,6 +716,8 @@ local nuiService = {
 				if data2.type == "item_money" then
 					if IS_PROCESSING_PAYMENT then return end
 					IS_PROCESSING_PAYMENT = true
+					--BLOCK OPEN INVENTORY HERE AND DROPPING ANY ITEMS UNTIL THE GIVE IS COMPLETED OR FAILED
+
 					TriggerServerEvent("vorpinventory:giveMoneyToPlayer", target, tonumber(data2.count))
 				elseif data2.type == "item_pesos" then
 					if IS_PROCESSING_PAYMENT then return end
@@ -752,31 +726,46 @@ local nuiService = {
 				elseif CONFIG.INVENTORY_UI.ADD_GOLD_ITEM and data2.type == "item_gold" then
 					if IS_PROCESSING_PAYMENT then return end
 					IS_PROCESSING_PAYMENT = true
+
+					INVENTORY_DISABLED = true
 					TriggerServerEvent("vorpinventory:giveGoldToPlayer", target, tonumber(data2.count))
 				elseif data2.type == "item_ammo" then
 					if IS_PROCESSING_PAYMENT then return end
 					IS_PROCESSING_PAYMENT = true
+
 					local amount = tonumber(data2.count)
 					local ammotype = data2.item
 					local maxcount = SHARED_DATA.MAX_AMMO[ammotype]
 					if amount > 0 and maxcount >= amount then
+						INVENTORY_DISABLED = true
 						TriggerServerEvent("vorpinventory:servergiveammo", ammotype, amount, target, maxcount)
+					else
+						INVENTORY_DISABLED = false
 					end
 				elseif data2.type == "item_standard" then
 					local amount = tonumber(data2.count)
 					local item = PLAYER_INVENTORY.ITEMS[itemId]
 
 					if amount > 0 and item ~= nil and item:getCount() >= amount then
+						INVENTORY_DISABLED = true
 						TriggerServerEvent("vorpinventory:serverGiveItem", itemId, amount, target)
+					else
+						INVENTORY_DISABLED = false
 					end
 				else
+					INVENTORY_DISABLED = true
 					TriggerServerEvent("vorpinventory:serverGiveWeapon", tonumber(itemId), target)
 				end
+
+
+				NUI_SERVICE.INVENTORY.CLOSE()
+			else
+				INVENTORY_DISABLED = false
 			end
 		end,
 
 		PLACE = function(obj)
-			if not CAN_USE_DROP then
+			if not CAN_USE_DROP or INVENTORY_DISABLED then
 				return CORE.NotifyRightTip(LANG.cantdrophere, 5000)
 			end
 
@@ -1011,8 +1000,11 @@ local nuiService = {
 					TooltipPlacement = CONFIG.INVENTORY_UI.TOOLTIP_PLACEMENT,
 					EnableHandCraftButton = CONFIG.INVENTORY_UI.HAND_CRAFT_BUTTON,
 					EnableSaddleButton = CONFIG.INVENTORY_UI.SADDLE_BUTTON,
+					EnableSortButton = CONFIG.INVENTORY_UI.SORT_BUTTON,
+					InvOrder = CONFIG.INV_ORDER,
 					MainInventoryFixedSlotCount = CONFIG.INVENTORY_UI.MAIN_INVENTORY_FIXED_SLOT_COUNT,
 					EnableWeaponAttachments = CONFIG.USE_WEAPON_COMPONENTS,
+					ManualWeaponReload = CONFIG.MANUAL_WEAPON_RELOAD,
 				}
 			})
 		end,
@@ -1070,7 +1062,7 @@ local nuiService = {
 		end,
 
 		DROP = function(obj, skip)
-			if not CAN_USE_DROP then
+			if not CAN_USE_DROP or INVENTORY_DISABLED then
 				return CORE.NotifyRightTip(LANG.cantdrophere, 5000)
 			end
 
@@ -1102,7 +1094,6 @@ local nuiService = {
 			if not result then return end
 
 			if weapon:getUsed() then
-				weapon:setUsed(false, true)
 				weapon:UnequipWeapon()
 			end
 
@@ -1251,7 +1242,7 @@ local nuiService = {
 				end
 				SetPedBlackboardBool(CACHE.Ped, 'GENERIC_WEAPON_CLEAN_PROMPT_AVAILABLE', false, -1)
 			else
-				if weaponStatus.degradation ~= 0.0 and weaponStatus.soot ~= 0.0 and weaponStatus.dirt ~= 0.0 then
+				if weaponStatus.degradation ~= 0.0 or weaponStatus.soot ~= 0.0 or weaponStatus.dirt ~= 0.0 then
 					SetPedBlackboardBool(CACHE.Ped, 'GENERIC_WEAPON_CLEAN_PROMPT_AVAILABLE', true, -1)
 				else
 					SetPedBlackboardBool(CACHE.Ped, 'GENERIC_WEAPON_CLEAN_PROMPT_AVAILABLE', false, -1)
@@ -1277,7 +1268,7 @@ local nuiService = {
 						if not result then
 							SetPedBlackboardBool(CACHE.Ped, 'GENERIC_WEAPON_CLEAN_PROMPT_AVAILABLE', false, -1)
 							ClearPedTasks(CACHE.Ped)
-							CORE.NotifyRightTip("You do not have the required item to clean this weapon", 5000)
+							CORE.NotifyRightTip(LANG.notRequiredItemToClean, 5000)
 							break
 						end
 					end
@@ -1342,7 +1333,7 @@ local nuiService = {
 	ITEM = {
 
 		DROP = function(obj, skip)
-			if not CAN_USE_DROP then
+			if not CAN_USE_DROP or INVENTORY_DISABLED then
 				return CORE.NotifyRightTip(LANG.cantdrophere, 5000)
 			end
 
@@ -1380,7 +1371,6 @@ local nuiService = {
 			else
 				dropData = { name = itemName, obj = index, amount = quantity, isItem = 1, position = data.advanced.position, rotation = data.advanced.rotation, id = itemId }
 			end
-
 			local result = CORE.Callback.TriggerAwait("vorp_inventory:callback:DropItem", dropData)
 			if not result then return end
 			NUI_SERVICE.INVENTORY.LOAD_ASYNC()
@@ -1752,7 +1742,7 @@ local nuiService = {
 	},
 	CURRENCY = {
 		DROP_MONEY = function(obj, skip)
-			if not CAN_USE_DROP then
+			if not CAN_USE_DROP or INVENTORY_DISABLED then
 				return CORE.NotifyRightTip(LANG.cantdrophere, 5000)
 			end
 
@@ -1842,7 +1832,7 @@ local nuiService = {
 			NUI_SERVICE.INVENTORY.LOAD_ASYNC()
 		end,
 		DROP_GOLD = function(obj, skip)
-			if not CAN_USE_DROP then
+			if not CAN_USE_DROP or INVENTORY_DISABLED then
 				return CORE.NotifyRightTip(LANG.cantdrophere, 5000)
 			end
 
@@ -1890,7 +1880,7 @@ local nuiService = {
 			NUI_SERVICE.INVENTORY.LOAD_ASYNC()
 		end,
 		DROP_ROLL = function(obj, skip)
-			if not CAN_USE_DROP then
+			if not CAN_USE_DROP or INVENTORY_DISABLED then
 				return CORE.NotifyRightTip(LANG.cantdrophere, 5000)
 			end
 

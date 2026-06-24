@@ -30,11 +30,17 @@ CONFIG.USE_LANTERN_ON_BELT               = true  -- If true then lanterns will b
 
 CONFIG.DUAL_WIELD                        = true  -- If true dual wielding will be allowed.
 
+CONFIG.DUAL_WIELD_HOLSTER_NEEDED         = true  -- If true, the player will need to have a left holster to dual wield, other wise they cant equipp 2 guns to use dual wield (any clothing store will sell one)
+
 CONFIG.AUTO_EQUIP_USED_WEAPONS           = true  -- will add weapons to the weapon wheel if player left with them equipped when they rejoin only works if MANUAL_WEAPON_RELOAD is true
 
 CONFIG.REMOVE_THROWABLE_WEAPONS          = true  -- If true, the throwable weapons will be removed when fired, and if picked up they get theweapon back again
 
 CONFIG.ENABLE_PETROL_CAN                 = false -- If true, the petrol can will be enabled and will be usable the amo is also saved
+
+CONFIG.DISABLE_WEAPON_WHELL_ITEMS        = false -- this wheel contains the fishing rod etc, if you set this to true it will hide that wheel and you must use these from hot bar.
+
+CONFIG.DISABLE_WEAPON_WHEEL_WEAPONS      = false -- if true, the weapon wheel will not show weapons, only items and you must use these from hot bar. and set ammo in inventory actions dropdown
 
 -- HERE WE DECIDE IF PLAYERS CAN EQUIP MORE THAN ONE WEAPON TYPE FOR EXAMPLE CAN EQUIPP 2 LONG WEAPONS? OR 2 SHORT WEAPONS?
 --  IF YOU WANT TO DISABLE THIS JUST REMOVE IT FROM THE WEAPONS.LUA FILE the variables LongWeapon and ShortWeapon
@@ -92,6 +98,8 @@ CONFIG.INVENTORY_UI = {
 
 	SADDLE_BUTTON = true,              -- enables saddle inventory button
 
+	SORT_BUTTON = true,                -- enables sort inventory button
+
 }
 
 --CAN ONLY USE HOTBAR IF PRESSING ALT AND HOLD so you can keep using the 1 2 3 4 5 keys normally while not holding ALT
@@ -99,9 +107,9 @@ CONFIG.HOTBAR       = {
 	ENABLE = true,
 	SHOW_WHEN_HOLD = true,                           -- will show hotbar when holding ALT
 	EDIT_COMMAND = "hotbarpos",                      -- command to edit the hotbar position
-	TOGGLE_KEY = `INPUT_INTERACT_OPTION1`,           -- G -- Hotbar: show/hide
+	TOGGLE_KEY = `INPUT_EMOTE_GREET`,                -- X -- Hotbar: show/hide
 	ALLOW = "all",                                   -- "all" is items and weapons , weapons only is "weapons" , "items" only is items
-	HOLD_KEY = `INPUT_SELECT_RADAR_MODE`,            -- key to hold to show hotbar (ALT)
+	HOLD_KEY = `INPUT_SELECT_RADAR_MODE`,            -- key to hold to show hotbar (ALT) and use hotbar, cant use hotbar if you are not pressing and holding this key
 	SLOT_KEYS = {
 		[1] = `INPUT_SELECT_QUICKSELECT_SIDEARMS_LEFT`, -- 1
 		[2] = `INPUT_SELECT_QUICKSELECT_DUALWIELD`,  -- 2

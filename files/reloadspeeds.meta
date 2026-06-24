@@ -4,7 +4,8 @@
             <Name>WEAPON_PISTOL_MAUSER</Name>
             <WeaponReload type="CWeaponReload">
                 <AnimReloadRate value="1.00" />
-            </WeaponReload>           <ShortArmHolsterDOF value="2" />
+            </WeaponReload>          
+             <ShortArmHolsterDOF value="2" />
         </CWeaponInfo>
                <CWeaponInfo>
             <Name>WEAPON_REPEATER_EVANS</Name>
@@ -51,7 +52,7 @@
                <CWeaponInfo>
             <Name>WEAPON_SNIPERRIFLE_CARCANO</Name>
             <WeaponReload type="CWeaponReload">
-                <AnimReloadRate value="0.60" />
+            <AnimReloadRate value="0.60" />
             </WeaponReload>            <WeaponFlags>
             CarriedInHand Gun CanFreeAim TwoHanded AnimReload UsableInCover
             UsableInVehicle UseSectionedReload UsableOnFoot HasLowCoverSwaps OnlyFireOneShot
@@ -121,7 +122,8 @@
             <Name>WEAPON_PISTOL_M1899</Name>
             <WeaponReload type="CWeaponReload">
                 <AnimReloadRate value="1.00" />
-            </WeaponReload>           <ShortArmHolsterDOF value="3" />
+            </WeaponReload>           
+            <ShortArmHolsterDOF value="3" />
         </CWeaponInfo>
                <CWeaponInfo>
             <Name>WEAPON_SNIPERRIFLE_ROLLINGBLOCK</Name>
@@ -171,5 +173,5 @@
                 <AnimReloadRate value="1.00" />
             </WeaponReload>
         </CWeaponInfo>
-           </Infos>
+</Infos>
     

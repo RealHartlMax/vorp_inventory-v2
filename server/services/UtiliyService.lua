@@ -194,6 +194,7 @@ local SvUtils = {
         end,
         REMOVE_USER = function(id)
             PROCESSING_USERS[id] = nil
+            TriggerClientEvent("vorp_inventory:ProcessingReady", id)
         end,
     }
 }
