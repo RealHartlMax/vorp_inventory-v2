@@ -12,6 +12,9 @@ CONFIG.HAND_CRAFTING = {
 
         ANIM = function()
             -- client: play animation when you implement craft execution
+            -- Example with vorp_animations
+            --local Animations = exports.vorp_animations.initiate()
+            --Animations.playAnimation('campfire', 2000)
             Wait(1000) -- if no animation wait this time to get the item crafted
         end
     },
