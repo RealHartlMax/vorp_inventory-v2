@@ -13,6 +13,12 @@ CONFIG.WALK_WHILE_INV_OPEN = true    -- If true, the player can walk while the i
 
 CONFIG.SHOW_PLAYER_NAME    = false   -- When giving an item, show the character name of nearby players instead of their player ID
 
+CONFIG.USE_GOLD_CURRENCY_CLIENT  = false -- client/shared toggle used by UI
+CONFIG.USE_GOLD_CURRENCY         = CONFIG.USE_GOLD_CURRENCY_CLIENT
+
+CONFIG.USE_PESOS_CURRENCY_CLIENT = false -- client/shared toggle used by UI
+CONFIG.USE_PESOS_CURRENCY        = CONFIG.USE_PESOS_CURRENCY_CLIENT
+
 
 -- WEAPON CONFIGURATION
 CONFIG.REMOVE_LASSO                      = true -- If true, the lasso will be removed when player hogties an NPC, only works if MANUAL_WEAPON_RELOAD is true

@@ -87,6 +87,10 @@ local function addPesos(character, amount)
 	return true
 end
 
+local function isPesosCurrencyEnabled()
+	return CONFIG.USE_PESOS_CURRENCY == true
+end
+
 -- to update custom inv cache
 local function updateItem(itemcrafted, value, item, charid, isExpired, id, identifier)
 	local item_add <const> = ITEM:Register({
@@ -383,6 +387,10 @@ local InventoryService <const> = {
 
 		PESOS = function(target, amount)
 			local _source <const> = source
+			if not isPesosCurrencyEnabled() then
+				return CORE.NotifyRightTip(_source, LANG.featureNotActive or "Pesos currency is disabled", 3000)
+			end
+
 			if target == _source then
 				return CORE.NotifyRightTip(_source, LANG.cantgiveyourself, 5000)
 			end
@@ -1032,6 +1040,9 @@ local InventoryService <const> = {
 
 		PESOS = function(data)
 			local _source = source
+			if not isPesosCurrencyEnabled() then
+				return
+			end
 
 			local pesos <const> = PICKUPS.PESOS[data.uuid]
 			if not pesos then
@@ -1332,6 +1343,10 @@ local InventoryService <const> = {
 		end,
 
 		SHARE_PESOS = function(source, callback, data)
+			if not isPesosCurrencyEnabled() then
+				return callback(false)
+			end
+
 			local character <const> = getCharacter(source)
 			if not character then return callback(false) end
 

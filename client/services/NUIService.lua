@@ -924,6 +924,7 @@ local nuiService = {
 		end,
 
 		SEND_LANG = function()
+			local pesosUiEnabled <const> = CONFIG.INVENTORY_UI.ADD_PESOS_ITEM and CONFIG.USE_PESOS_CURRENCY == true
 			SendNUIMessage({
 				action = "initiate",
 				hotbarPos = CONFIG.HOTBAR.ENABLE and NUI_SERVICE.HOTBAR.LOAD_POSITION() or nil,
@@ -988,8 +989,8 @@ local nuiService = {
 					UseGoldItem = CONFIG.INVENTORY_UI.ADD_GOLD_ITEM,
 					AddGoldItem = CONFIG.INVENTORY_UI.ADD_GOLD_ITEM,
 					AddDollarItem = true,
-					UsePesosItem = CONFIG.INVENTORY_UI.ADD_PESOS_ITEM,
-					AddPesosItem = CONFIG.INVENTORY_UI.ADD_PESOS_ITEM,
+					UsePesosItem = pesosUiEnabled,
+					AddPesosItem = pesosUiEnabled,
 					AddAmmoItem = true,
 					UseRolItem = CONFIG.INVENTORY_UI.ADD_ROLL_ITEM,
 					AddRollItem = CONFIG.INVENTORY_UI.ADD_ROLL_ITEM,
@@ -1789,7 +1790,7 @@ local nuiService = {
 				return CORE.NotifyRightTip(LANG.cantdrophere, 5000)
 			end
 
-			if not CONFIG.INVENTORY_UI.ADD_PESOS_ITEM then
+			if not CONFIG.INVENTORY_UI.ADD_PESOS_ITEM or CONFIG.USE_PESOS_CURRENCY ~= true then
 				return
 			end
 

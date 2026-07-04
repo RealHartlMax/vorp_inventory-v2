@@ -2596,6 +2596,8 @@ $("document").ready(function () {
             Config.UseGoldItem = LuaConfig.UseGoldItem;
             Config.AddGoldItem = LuaConfig.AddGoldItem;
             Config.AddDollarItem = LuaConfig.AddDollarItem;
+            Config.UsePesosItem = LuaConfig.UsePesosItem;
+            Config.AddPesosItem = LuaConfig.AddPesosItem;
             Config.AddAmmoItem = LuaConfig.AddAmmoItem;
             Config.UseRolItem = LuaConfig.UseRolItem;
             Config.AddRollItem = LuaConfig.AddRollItem;

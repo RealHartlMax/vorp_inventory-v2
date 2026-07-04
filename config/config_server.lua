@@ -1,7 +1,20 @@
 CONFIG                     = CONFIG or {}
 
-CONFIG.USE_GOLD_CURRENCY   = false -- you do not use gold currency leave this to false this will block any attempts to use gold
-CONFIG.USE_PESOS_CURRENCY  = false -- if true, pesos currency actions are enabled (requires vorp_core pesos support)
+local sharedGoldCurrencyFlag <const> = CONFIG.USE_GOLD_CURRENCY
+local sharedPesosCurrencyFlag <const> = CONFIG.USE_PESOS_CURRENCY
+
+CONFIG.USE_GOLD_CURRENCY_SERVER = false -- server toggle for gold actions
+CONFIG.USE_GOLD_CURRENCY   = CONFIG.USE_GOLD_CURRENCY_SERVER
+CONFIG.USE_PESOS_CURRENCY_SERVER = false -- server toggle for pesos actions
+CONFIG.USE_PESOS_CURRENCY  = CONFIG.USE_PESOS_CURRENCY_SERVER
+
+if sharedGoldCurrencyFlag ~= nil and sharedGoldCurrencyFlag ~= CONFIG.USE_GOLD_CURRENCY then
+    print("^3[vorp_inventory]^7 USE_GOLD_CURRENCY mismatch: config/config.lua=" .. tostring(sharedGoldCurrencyFlag) .. " config/config_server.lua=" .. tostring(CONFIG.USE_GOLD_CURRENCY) .. ". Server value is used for backend actions.")
+end
+
+if sharedPesosCurrencyFlag ~= nil and sharedPesosCurrencyFlag ~= CONFIG.USE_PESOS_CURRENCY then
+    print("^3[vorp_inventory]^7 USE_PESOS_CURRENCY mismatch: config/config.lua=" .. tostring(sharedPesosCurrencyFlag) .. " config/config_server.lua=" .. tostring(CONFIG.USE_PESOS_CURRENCY) .. ". Server value is used for backend actions.")
+end
 
 -- TO USE THE OPEN SADLE BUTTON ADD YOUR STABLE LOGIC HERE
 -- this is a server side function
