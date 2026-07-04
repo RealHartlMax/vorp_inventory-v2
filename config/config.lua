@@ -13,10 +13,10 @@ CONFIG.WALK_WHILE_INV_OPEN = true    -- If true, the player can walk while the i
 
 CONFIG.SHOW_PLAYER_NAME    = false   -- When giving an item, show the character name of nearby players instead of their player ID
 
-CONFIG.USE_GOLD_CURRENCY_CLIENT  = false -- client/shared toggle used by UI
+CONFIG.USE_GOLD_CURRENCY_CLIENT  = true -- client/shared toggle used by UI
 CONFIG.USE_GOLD_CURRENCY         = CONFIG.USE_GOLD_CURRENCY_CLIENT
 
-CONFIG.USE_PESOS_CURRENCY_CLIENT = false -- client/shared toggle used by UI
+CONFIG.USE_PESOS_CURRENCY_CLIENT = true -- client/shared toggle used by UI
 CONFIG.USE_PESOS_CURRENCY        = CONFIG.USE_PESOS_CURRENCY_CLIENT
 
 
@@ -110,7 +110,7 @@ CONFIG.INVENTORY_UI = {
 
 --CAN ONLY USE HOTBAR IF PRESSING ALT AND HOLD so you can keep using the 1 2 3 4 5 keys normally while not holding ALT
 CONFIG.HOTBAR       = {
-	ENABLE = true,
+	ENABLE = false,
 	SHOW_WHEN_HOLD = true,                           -- will show hotbar when holding ALT
 	EDIT_COMMAND = "hotbarpos",                      -- command to edit the hotbar position
 	TOGGLE_KEY = `INPUT_EMOTE_GREET`,                -- X -- Hotbar: show/hide

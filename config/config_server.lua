@@ -30,11 +30,11 @@ CONFIG.NEW_PLAYER          = {
         COOLDOWN = 300, -- in seconds 5m by default
     },
     START_ITEMS = {
-        consumable_raspberrywater = 2, -- ITEMS SAME NAME AS IN DATABASE
-        ammorevolvernormal = 1         -- AMMO SAME NAME AS IN THE DATABASE
+        consumable_raspberrywater = 0, -- ITEMS SAME NAME AS IN DATABASE
+        ammorevolvernormal = 0         -- AMMO SAME NAME AS IN THE DATABASE
     },
     START_WEAPONS = {
-        "WEAPON_MELEE_KNIFE" -- WEAPON NAME
+        --"WEAPON_MELEE_KNIFE" -- WEAPON NAME
     }
 }
 
