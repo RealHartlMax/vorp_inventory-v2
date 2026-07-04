@@ -96,7 +96,7 @@ CONFIG.INVENTORY_UI = {
 
 	ADD_GOLD_ITEM = false,             -- If true, the gold item will be added to the inventory to represent the gold/give gold/drop gold
 
-	ADD_PESOS_ITEM = false,            -- If true, the pesos item will be added to the inventory to represent pesos/give/drop pesos
+	ADD_PESOS_ITEM = true,             -- If true, the pesos item will be added to the inventory to represent pesos/give/drop pesos
 
 	ADD_ROLL_ITEM = false,             -- If true, the roll item will be added to the inventory to represent the roll/give roll/drop roll
 

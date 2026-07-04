@@ -2618,6 +2618,10 @@ $("document").ready(function () {
             if (Config.EnableHotbar && event.data.hotbarPos) {
                 hotbarCustomPos = event.data.hotbarPos;
             }
+            if (!Config.EnableHotbar) {
+                $("#hotbarHud").addClass("hotbar-hud--hidden").removeClass("hotbar-hud--with-inventory");
+            }
+            HOTBAR.VISIBILITY.REFRESH();
             $("#handCraftingOpenBtn").toggle(!!Config.EnableHandCraftButton);
             $("#inventorySaddleBtn").toggle(!!Config.EnableSaddleButton);
             $("#weaponAttachmentsOpenBtn").toggle(Config.EnableWeaponAttachments);
