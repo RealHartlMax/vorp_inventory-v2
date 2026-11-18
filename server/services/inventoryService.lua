@@ -1194,7 +1194,7 @@ local InventoryService <const> = {
 				return callback(false)
 			end
 
-			if CONFIG.PICKUPS.DELETE_ON_DROP then
+			if CONFIG.PICKUPS.DELETE_ON_DROP.WEAPON then
 				INVENTORY_API.MAIN.DELETE_WEAPON(source, data.id)
 				SV_UTILS.PROCESS.REMOVE_USER(source)
 				return callback(true)
@@ -1272,7 +1272,8 @@ local InventoryService <const> = {
 				return callback(false)
 			end
 
-			if CONFIG.PICKUPS.DELETE_ON_DROP then
+			if CONFIG.PICKUPS.DELETE_ON_DROP.ITEM then
+				TriggerClientEvent("vorpInventory:removeItem", source, data.id, data.amount)
 				SV_UTILS.PROCESS.REMOVE_USER(source)
 				return callback(true)
 			end
@@ -1316,6 +1317,12 @@ local InventoryService <const> = {
 			end
 
 			character.removeCurrency(0, data.amount)
+
+			if CONFIG.PICKUPS.DELETE_ON_DROP.MONEY then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(true)
+			end
+
 			local uid <const> = SV_UTILS.GENERATE_UNIQUE_ID()
 			TriggerClientEvent("vorpInventory:shareMoneyPickupClient", -1, data.handle, data.amount, data.position, uid, 1, data.rotation)
 
@@ -1402,6 +1409,12 @@ local InventoryService <const> = {
 			end
 
 			character.removeCurrency(1, data.amount)
+
+			if CONFIG.PICKUPS.DELETE_ON_DROP.GOLD then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(true)
+			end
+
 			local uid <const> = SV_UTILS.GENERATE_UNIQUE_ID()
 			TriggerClientEvent("vorpInventory:shareGoldPickupClient", -1, data.handle, data.amount, data.position, uid, 1, data.rotation)
 
@@ -1447,6 +1460,12 @@ local InventoryService <const> = {
 			end
 
 			character.removeCurrency(2, data.amount)
+
+			if CONFIG.PICKUPS.DELETE_ON_DROP.ROLL then
+				SV_UTILS.PROCESS.REMOVE_USER(source)
+				return callback(true)
+			end
+
 			local uid <const> = SV_UTILS.GENERATE_UNIQUE_ID()
 			TriggerClientEvent("vorpInventory:shareRollPickupClient", -1, data.handle, data.amount, data.position, uid, 1, data.rotation)
 
@@ -1473,7 +1492,6 @@ local InventoryService <const> = {
 			SV_UTILS.PROCESS.REMOVE_USER(source)
 			return callback(true)
 		end,
-
 	},
 
 	ITEM = {
@@ -1525,10 +1543,10 @@ local InventoryService <const> = {
 				if isExpired then
 					local canUseExpired = arguments.item.metadata?.useExpired or SERVER_ITEMS[itemName]?.useExpired
 					if not canUseExpired then
-						local text = "Item is expired and can't be used"
+						local text = LANG.itemExpiredCantUse
 						if CONFIG.DELETE_ITEM_EXPIRED then
 							INVENTORY_API.MAIN.SUB_ITEM_BY_ID(_source, item:getId())
-							text = "Item is expired and can't be used, item was removed from your inventory"
+							text = LANG.itemExpiredRemoved
 						end
 						CORE.NotifyRightTip(_source, text, 3000)
 						return
@@ -1803,6 +1821,54 @@ local InventoryService <const> = {
 			userAmmoData.ammo[ammoType] = math.max(0, userAmmoData.ammo[ammoType] - amount)
 		end,
 
+
+		PICKED_UP_AMMO = function(data)
+			local _source <const> = source
+			if type(data) ~= "table" then return end
+
+			local character <const> = getCharacter(_source)
+			if not character then return end
+
+			local weaponId <const> = tonumber(data.weaponId)
+			local amount <const> = tonumber(data.amount)
+			local ammoType <const> = data.ammoType
+			if amount ~= 1 then return end
+
+			local weapon <const> = USERS_WEAPONS.default[weaponId]
+			if not weapon then return end
+			if weapon:getPropietary() ~= character.identifier or weapon:getCharId() ~= character.charIdentifier then return end
+			if weapon:getCurrInv() ~= "default" then return end
+			if not weapon:getUsed() and not weapon:getUsed2() then return end
+
+			if not weapon:hasAmmoType(ammoType) then return end
+
+			weapon:addAmmoToClip(ammoType, amount)
+		end,
+
+		SET_AMMO_TYPE = function(data)
+			local _source <const> = source
+			local weaponId <const> = data.weaponId
+			local ammoType <const> = data.ammoType
+			local weapon <const> = USERS_WEAPONS.default[weaponId]
+			if not weapon then return print("weapon not found :", weaponId) end
+
+			local userAmmoData <const> = USERS_AMMO_DATA[_source]
+			if not userAmmoData then return print("user ammo data not found :", _source) end
+
+			local beltAmount <const> = userAmmoData.ammo[ammoType] or 0
+			if beltAmount <= 0 then
+				return print("not enough ammo in belt :", ammoType, "player :", GetPlayerName(_source))
+			end
+
+			local amountToLoad <const> = math.min(weapon:getDefaultClipSize(), beltAmount)
+
+			weapon:addAmmoToClip(ammoType, amountToLoad)
+			userAmmoData.ammo[ammoType] = math.max(0, beltAmount - amountToLoad)
+
+			TriggerClientEvent("vorpinventory:recammo", _source, userAmmoData)
+			TriggerClientEvent("vorpinventory:setWeaponAmmoType", _source, weaponId, ammoType, amountToLoad, weapon:getName())
+		end,
+
 		ADD_BULLET = function(ammotype, amount, weaponid)
 			local _source <const> = source
 
@@ -1817,7 +1883,7 @@ local InventoryService <const> = {
 			if not userAmmoData then return print("user ammo data not found :", _source) end
 
 			if not userAmmoData.ammo[ammotype] then
-				CORE.NotifyObjective(_source, "You can't unload your weapon because your gunbelt does not have the ammo type,to store ammo, your belt must have the ammotype", 2000);
+				CORE.NotifyObjective(_source, LANG.cantUnloadNoAmmoTypeInBelt, 2000);
 				return
 			end
 
@@ -2174,6 +2240,12 @@ local InventoryService <const> = {
 
 				for weaponId, weapon in pairs(USERS_WEAPONS[id]) do
 					if invData:isShared() or weapon.charId == sourceCharIdentifier then
+						if weapon:getUsed() or weapon:getUsed2() then
+							weapon:setUsed(false)
+							weapon:setUsed2(false)
+							DB_SERVICE.ASYNC.UPDATE('UPDATE loadout SET used = 0, used2 = 0 WHERE id = @id', { id = weaponId })
+						end
+
 						itemList[#itemList + 1] = WEAPON:Register({
 							id            = weaponId,
 							count         = 1,
@@ -2188,8 +2260,8 @@ local InventoryService <const> = {
 							custom_desc   = weapon.custom_desc,
 							ammo          = weapon:getAllAmmo(),
 							components    = weapon:getAllComponents(),
-							used          = weapon:getUsed(),
-							used2         = weapon:getUsed2(),
+							used          = false,
+							used2         = false,
 							weight        = weapon:getWeight(),
 						})
 					end
@@ -2660,14 +2732,16 @@ local InventoryService <const> = {
 					return CORE.NotifyObjective(_source, message, 2000)
 				end
 
-				local query = "UPDATE loadout SET identifier = '',curr_inv = @invId WHERE charidentifier = @charid AND id = @weaponId"
+				local query = "UPDATE loadout SET identifier = '', curr_inv = @invId, used = 0, used2 = 0 WHERE charidentifier = @charid AND id = @weaponId"
 				local params = { invId = invId, charid = sourceCharIdentifier, weaponId = item.id }
 				DB_SERVICE.ASYNC.UPDATE(query, params)
-				USERS_WEAPONS.default[item.id]:setCurrInv(invId)
-				USERS_WEAPONS[invId][item.id] = USERS_WEAPONS.default[item.id]
+				local weapon <const> = USERS_WEAPONS.default[item.id]
+				weapon:setCurrInv(invId)
+				weapon:setUsed(false)
+				weapon:setUsed2(false)
+				USERS_WEAPONS[invId][item.id] = weapon
 				USERS_WEAPONS.default[item.id] = nil
 				TriggerClientEvent("vorpCoreClient:subWeapon", _source, item.id)
-				local weapon <const> = USERS_WEAPONS[invId][item.id]
 				TriggerClientEvent("vorp_inventory:client:secondaryItemAdded", _source, {
 					id            = item.id,
 					name          = weapon:getName(),
@@ -2678,8 +2752,8 @@ local InventoryService <const> = {
 					custom_label  = weapon:getCustomLabel(),
 					custom_desc   = weapon:getCustomDesc(),
 					ammo          = weapon:getAllAmmo(),
-					used          = weapon:getUsed(),
-					used2         = weapon:getUsed2(),
+					used          = false,
+					used2         = false,
 				})
 				INVENTORY_SERVICE.LOGS.DISCORD(invId, item.name, amount, sourceName, "Move")
 				SV_UTILS.PROCESS.REMOVE_USER(_source)

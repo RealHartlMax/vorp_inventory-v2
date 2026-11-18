@@ -23,10 +23,11 @@ end)
 
 local function isDualWielding()
 	-- IF EXISTS IN RIGHT HOLSTER OR IN HAND THEN WE WANT TO ADD DUAL
-	local _, weapon = GetCurrentPedWeapon(CACHE.Ped, false, 0, true) -- in right hand
-	local _, weapon2 = GetCurrentPedWeapon(CACHE.Ped, true, 2, true) -- in right holster
-
-	return weapon ~= `WEAPON_UNARMED` or not (weapon2 ~= `WEAPON_UNARMED` or weapon2 ~= 0)
+	local rightHandWeapon = GetPedCurrentHeldWeapon(CACHE.Ped)
+	local _, rightHandHolster = GetCurrentPedWeapon(CACHE.Ped, true, 2, true) -- in right holster
+	local isValid = IsWeaponRevolver(rightHandWeapon) == 1 or IsWeaponPistol(rightHandWeapon) == 1
+	local isValid2 = IsWeaponRevolver(rightHandHolster) == 1 or IsWeaponPistol(rightHandHolster) == 1
+	return isValid or isValid2
 end
 
 local function useWeapon(data)
@@ -60,7 +61,7 @@ local function useWeapon(data)
 			-- PLAYER NEEDS TO HAVE THE HOLSTER IN THE LEFT HAND TO DUAL WIELD
 			local hasLeftHolster = INVENTORY_SERVICE.HAS_LEFT_HOLSTER()
 			if not hasLeftHolster then
-				CORE.NotifyRightTip("You need to have a left holster to dual wield", 5000)
+				CORE.NotifyRightTip(LANG.needLeftHolsterToDualWield, 5000)
 				return
 			end
 		end
@@ -104,7 +105,7 @@ local function useWeapon(data)
 		LocalPlayer.state:set(key, info, true)
 	end
 	TriggerServerEvent("vorpinventory:setUsedWeapon", weaponId, weapon:getUsed(), weapon:getUsed2())
-	print("weapon")
+
 	NUI_SERVICE.WEAPON.UPDATE_ICON(weapon:getId())
 end
 
@@ -596,6 +597,7 @@ local nuiService = {
 			if CONFIG.HOTBAR.ENABLE then
 				NUI_SERVICE.HOTBAR.SEND_UPDATE()
 			end
+			AMMO_LOADED = true
 		end,
 
 		DISABLE = function(param)
@@ -2000,13 +2002,12 @@ local nuiService = {
 				NUI_SERVICE.INVENTORY.CLOSE()
 				TriggerServerEvent("vorp_inventory:Server:SaddleOpen", netId)
 			else
-				CORE.NotifyObjective("You are not on a horse", 5000)
+				CORE.NotifyObjective(LANG.notOnHorse, 5000)
 			end
 		end,
 	},
 
 }
-
 
 
 NUI_SERVICE = nuiService

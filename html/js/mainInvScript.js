@@ -2612,8 +2612,7 @@ $("document").ready(function () {
             Config.ItemRaritySlotStyle = LuaConfig.ItemRaritySlotStyle ?? Config.ItemRaritySlotStyle;
             Config.TooltipPlacement = LuaConfig.TooltipPlacement;
             Config.ManualWeaponReload = LuaConfig.ManualWeaponReload;
-
-            Config.MainInventoryFixedSlotCount = LuaConfig.MainInventoryFixedSlotCount;
+            Config.MainInventoryFixedSlotCount = Math.min(Number(LuaConfig.MainInventoryFixedSlotCount) || 52, 500);
 
             if (Config.EnableHotbar && event.data.hotbarPos) {
                 hotbarCustomPos = event.data.hotbarPos;
@@ -2879,16 +2878,6 @@ $("document").ready(function () {
 
             INVENTORY.SECONDARY.SCHEDULE_GROUP_STRIP();
 
-            let l = event.data.itemList.length
-            let itemlist = event.data.itemList
-            let total = 0
-            let p = 0
-            for (p; p < l; p++) {
-                total += Number(itemlist[p].count)
-            }
-
-            //amount of items in Inventory
-            INVENTORY.SECONDARY.SET_CURRENT_CAPACITY(total);
         } else if (event.data.action == "mainItemUpdate") {
             INVENTORY.MAIN.MAIN_UPDATE_ITEM(event.data.item);
             WEAPON_ATTACHMENTS.MAIN_ITEM_UPDATE(event.data.item);

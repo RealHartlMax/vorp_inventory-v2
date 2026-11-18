@@ -163,7 +163,6 @@ local Weapon <const> = LIB.Class:Create({
 		if move then
 			--SET_CURRENT_PED_WEAPON_BY_GUID
 			Citizen.InvokeNative(0x12FB95FE3D579238, CACHE.Ped, _EQUIPPED[1].guid, true, 1, false, false)
-			TriggerServerEvent("syn_weapons:applyDupeTint", id, itemData:Buffer(), weaponHash)
 		end
 		if id then
 			table.insert(_EQUIPPED, { id = id, guid = itemData:Buffer() })
@@ -306,7 +305,7 @@ local Weapon <const> = LIB.Class:Create({
 				for _, weapon in pairs(PLAYER_INVENTORY.WEAPONS) do
 					local isWeaponOneHanded <const> = IsWeaponOneHanded(joaat(weapon:getName())) == 1
 					local isWeaponAGun <const> = Citizen.InvokeNative(0x705BE297EEBDB95D, joaat(weapon:getName()))
-					if self.name ~= weapon:getName() and isWeaponOneHanded and isWeaponAGun then
+					if self.name ~= weapon:getName() and isWeaponOneHanded and isWeaponAGun and weapon:getUsed() then
 						weapon:setUsed2(false) -- updates server because bellow wont update if true
 						weapon:loadAmmo()
 						SetCurrentPedWeapon(CACHE.Ped, joaat(weapon:getName()), true, 2, false, false)
@@ -479,12 +478,10 @@ local Weapon <const> = LIB.Class:Create({
 					end
 				end
 
-				self:setUsed(true)
 				if self.used2 and CONFIG.DUAL_WIELD then
 					if isWeaponAGun and isWeaponOneHanded then
-						if not CONFIG.DUAL_WIELD_HOLSTER_NEEDED then
-							INVENTORY_SERVICE.APPLY_OFF_HAND_HOLSTER()
-						end
+						INVENTORY_SERVICE.APPLY_OFF_HAND_HOLSTER()
+
 
 						self:_addWeapon(self.name, 1, self.id)
 						if not CONFIG.MANUAL_WEAPON_RELOAD then
@@ -501,8 +498,8 @@ local Weapon <const> = LIB.Class:Create({
 								weaponUsed = weapon
 							end
 						end
-						--self:holsterDualWieldSlots()
-						if self.name ~= weaponUsed.name then
+
+						if weaponUsed and self.name ~= weaponUsed.name then
 							local ammoTotal = {} -- ONLY IF GUNS ARE DIFERENT
 							for _, ammotable in pairs(ammo) do
 								for ammoType, amount in pairs(ammotable) do
@@ -787,9 +784,11 @@ local Weapon <const> = LIB.Class:Create({
 							maxAllowed = self:getDefaultClipSize()
 						end
 
+
 						if ammoInWeapon > maxAllowed then
-							-- somehow it adds more ammo than it should, seems the game saves some ammo in ped
 							RemoveAmmoFromPedByType(CACHE.Ped, joaat(type), ammoInWeapon - maxAllowed, `REMOVE_REASON_DROPPED`)
+						elseif ammoInWeapon > amount then
+							RemoveAmmoFromPedByType(CACHE.Ped, joaat(type), ammoInWeapon - amount, `REMOVE_REASON_DROPPED`)
 						end
 					end
 				end
@@ -837,6 +836,7 @@ local Weapon <const> = LIB.Class:Create({
 ---@field public Register fun(self: WEAPON_CLIENT, data: table): WEAPON_CLIENT
 WEAPON = Weapon
 
+
 function WEAPON:Register(data)
 	local weaponClass <const> = WEAPON:New(data)
 	PLAYER_INVENTORY.WEAPONS[data.id] = weaponClass
@@ -869,13 +869,13 @@ function WEAPON:AddDualWield(weapons)
 		AddWardrobeInventoryItem("UPGRADE_OFFHAND_HOLSTER", 0x39E57B01)
 	end
 
-	if #weapons == 1 then
-		local weapon <const> = PLAYER_INVENTORY.WEAPONS[weapons[1]]
-		if weapon then
-			weapon:addWeaponDualWield(weapon:getName(), 0, weapon:getId())
-		end
-		return
-	end
+	-- if #weapons == 1 then
+	-- 	local weapon <const> = PLAYER_INVENTORY.WEAPONS[weapons[1]]
+	-- 	if weapon then
+	-- 		weapon:addWeaponDualWield(weapon:getName(), 0, weapon:getId())
+	-- 	end
+	-- 	return
+	-- end
 
 	local getUsed = {}
 	local getUsed2 = {}

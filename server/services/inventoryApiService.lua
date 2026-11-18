@@ -982,7 +982,7 @@ local InventoryAPI = {
 			if currentAmount + amount > maxAmount then
 				-- dont return because will break scripts im sure no one is listening for the return
 				local amountAdded = maxAmount - currentAmount
-				CORE.NotifyObjective(_source, "you can't hold that many added: " .. amountAdded .. " max is: " .. maxAmount)
+				CORE.NotifyObjective(_source, string.format(LANG.cantHoldThatManyAmmo, amountAdded, maxAmount))
 				--return respond(cb, false)
 			end
 
@@ -996,9 +996,7 @@ local InventoryAPI = {
 
 			TriggerClientEvent("vorpinventory:recammo", _source, USERS_AMMO_DATA[_source], not CONFIG.MANUAL_WEAPON_RELOAD)
 
-			local query1 = 'UPDATE characters SET ammo = @ammo WHERE charidentifier = @charidentifier'
-			local params1 <const> = { charidentifier = charidentifier, ammo = json.encode(ammo) }
-			DB_SERVICE.ASYNC.UPDATE(query1, params1)
+			INVENTORY_SERVICE.AMMO.SAVE(_source)
 
 			return respond(cb, true)
 		end,
@@ -1748,7 +1746,7 @@ local InventoryAPI = {
 				return respond(callback, 0)
 			end
 
-			local result <const> = DB_SERVICE.AWAIT.QUERY("SELECT COUNT(*) as total_count FROM loadout WHERE curr_inv = @invType AND weapon = @weapon_name", { invType = id, weapon_name = weapon_name })
+			local result <const> = DB_SERVICE.AWAIT.QUERY("SELECT COUNT(*) as total_count FROM loadout WHERE curr_inv = @invType AND name = @weapon_name", { invType = id, weapon_name = weapon_name })
 			if result[1] and result[1].total_count then
 				return respond(callback, tonumber(result[1].total_count))
 			end
